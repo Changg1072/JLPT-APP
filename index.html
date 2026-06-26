@@ -1155,18 +1155,28 @@ async function sendToGemini() {
 
   const q = quizData[currentQ];
   
-  // 🌟 NÂNG CẤP PROMPT: CHỐNG "LẠC ĐỀ", ƯU TIÊN LỆNH NGƯỜI DÙNG LÊN CAO NHẤT
+  // 🌟 NÂNG CẤP PROMPT: CHIA TRƯỜNG HỢP XỬ LÝ THÔNG MINH
   let prompt = `LỆNH CỦA NGƯỜI DÙNG: "${text}"
   
-  [Ngữ cảnh phụ (chỉ dùng nếu người dùng hỏi về câu trắc nghiệm này): Câu hỏi: "${q.jp}", Đáp án: ${q.options.join(', ')}]
+  [Ngữ cảnh câu trắc nghiệm hiện tại]:
+  - Câu hỏi: "${q.jp}"
+  - Lựa chọn: ${q.options.map((opt, i) => `${i + 1}. ${opt}`).join(' | ')}
+  - Đáp án đúng: Lựa chọn số ${q.ans + 1} (${q.options[q.ans]})
+  - Giải thích gốc: "${q.explain}"
   
-  CHỈ THỊ TỐI CAO (PHẢI TUÂN THỦ NGHIÊM NGẶT):
-  1. TRẢ LỜI ĐÚNG ĐỐI TƯỢNG: Người dùng hỏi về từ/ngữ pháp nào trong "LỆNH CỦA NGƯỜI DÙNG", BẮT BUỘC phải phân tích chính xác từ/ngữ pháp đó. TUYỆT ĐỐI KHÔNG lấy ngữ pháp trong phần "Ngữ cảnh phụ" ra trả lời thay thế (Ví dụ: Người dùng hỏi "たら" thì bắt buộc phải giải thích "たら").
-  2. QUY TẮC PHÂN TÍCH:
-     - Hỏi nghĩa từ vựng: Ý nghĩa -> Cách đọc -> Phân tích Kanji.
-     - Hỏi ngữ pháp: Ý nghĩa -> Cấu trúc -> Sắc thái sử dụng.
-  3. KHÔNG đưa ra gợi ý làm bài hay nhắc đến đáp án đúng nếu người dùng không yêu cầu.
-  4. Trình bày gọn gàng, dùng markdown. TUYỆT ĐỐI KHÔNG dùng ký hiệu ### hay ---.`;
+  CHỈ THỊ TỐI CAO: Hãy đọc "LỆNH CỦA NGƯỜI DÙNG" và xử lý theo ĐÚNG 1 TRONG 2 TRƯỜNG HỢP SAU:
+  
+  Trường hợp 1: Người dùng hỏi về MỘT TỪ VỰNG / NGỮ PHÁP CỤ THỂ (VD: "dịch chữ X", "phân tích ngữ pháp Y").
+  - BẮT BUỘC chỉ tập trung vào đúng đối tượng đó.
+  - Phân tích từ vựng: Ý nghĩa -> Cách đọc -> Phân tích Kanji.
+  - Phân tích ngữ pháp: Ý nghĩa -> Cấu trúc -> Sắc thái sử dụng.
+  
+  Trường hợp 2: Người dùng yêu cầu GIẢI THÍCH ĐÁP ÁN (VD: "tại sao chọn 1", "tại sao không chọn mấy cái kia", "giải thích các đáp án").
+  - BẮT BUỘC phân tích rõ ràng:
+    + Tại sao đáp án số ${q.ans + 1} lại đúng (dựa vào ngữ cảnh câu).
+    + Tại sao CÁC ĐÁP ÁN CÒN LẠI lại sai (vì sai cấu trúc, sai ý nghĩa, hay không phù hợp hoàn cảnh).
+  
+  YÊU CẦU TRÌNH BÀY: Dùng giọng điệu thân thiện, trình bày gọn gàng bằng markdown. TUYỆT ĐỐI KHÔNG dùng ký hiệu ### hay ---.`;
 
   try {
     const data = await callGeminiApiWithRetry(prompt);
@@ -1190,6 +1200,7 @@ async function sendToGemini() {
     console.error("Lỗi Gemini:", e);
   }
 }
+
 
 /* --- MODULE 7: BACKUP --- */
 function exportData() {
