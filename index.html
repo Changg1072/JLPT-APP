@@ -1146,28 +1146,49 @@ async function sendToGemini() {
   geminiChats[currentQ].push({ role: 'user', text: text });
   
   const chatHistory = document.getElementById('gemini-chat-history');
-  chatHistory.innerHTML += `<div style="background:#FF8FAB; color:white; padding:10px 14px; border-radius:12px; align-self:flex-end; max-width:85%; line-height:1.6;">${text}</div>`;
+  chatHistory.innerHTML += `<div style="background:#FF8FAB; color:white; padding:10px 14px; border-radius:12px; font-size:14px; align-self:flex-end; max-width:85%; line-height:1.6;">${text}</div>`;
   inputEl.value = '';
   
   const loadId = 'loading-' + Date.now();
-  chatHistory.innerHTML += `<div id="${loadId}" style="background:#F3F4F6; padding:10px 14px; border-radius:12px; align-self:flex-start; color:#6B7280;">Đang gõ... 🐰</div>`;
+  chatHistory.innerHTML += `<div id="${loadId}" style="background:#F3F4F6; padding:10px 14px; border-radius:12px; font-size:14px; align-self:flex-start; color:#6B7280;">Trợ lý đang gõ... 🐰</div>`;
   chatHistory.scrollTop = chatHistory.scrollHeight;
 
   const q = quizData[currentQ];
-  const isAnswered = selectedOpt !== null;
-  let prompt = `Ngữ cảnh: "${q.jp}". Lựa chọn: ${q.options.join(', ')}. Đáp án đúng: ${q.options[q.ans]}. Học viên hỏi: "${text}".\n`;
-  prompt += isAnswered ? `Giải thích chi tiết tại sao.` : `Gợi ý để họ tự tìm ra đáp án, tuyệt đối KHÔNG nói thẳng đáp án đúng.`;
+  
+  // 🌟 NÂNG CẤP PROMPT: CHỐNG "LẠC ĐỀ", ƯU TIÊN LỆNH NGƯỜI DÙNG LÊN CAO NHẤT
+  let prompt = `LỆNH CỦA NGƯỜI DÙNG: "${text}"
+  
+  [Ngữ cảnh phụ (chỉ dùng nếu người dùng hỏi về câu trắc nghiệm này): Câu hỏi: "${q.jp}", Đáp án: ${q.options.join(', ')}]
+  
+  CHỈ THỊ TỐI CAO (PHẢI TUÂN THỦ NGHIÊM NGẶT):
+  1. TRẢ LỜI ĐÚNG ĐỐI TƯỢNG: Người dùng hỏi về từ/ngữ pháp nào trong "LỆNH CỦA NGƯỜI DÙNG", BẮT BUỘC phải phân tích chính xác từ/ngữ pháp đó. TUYỆT ĐỐI KHÔNG lấy ngữ pháp trong phần "Ngữ cảnh phụ" ra trả lời thay thế (Ví dụ: Người dùng hỏi "たら" thì bắt buộc phải giải thích "たら").
+  2. QUY TẮC PHÂN TÍCH:
+     - Hỏi nghĩa từ vựng: Ý nghĩa -> Cách đọc -> Phân tích Kanji.
+     - Hỏi ngữ pháp: Ý nghĩa -> Cấu trúc -> Sắc thái sử dụng.
+  3. KHÔNG đưa ra gợi ý làm bài hay nhắc đến đáp án đúng nếu người dùng không yêu cầu.
+  4. Trình bày gọn gàng, dùng markdown. TUYỆT ĐỐI KHÔNG dùng ký hiệu ### hay ---.`;
 
   try {
     const data = await callGeminiApiWithRetry(prompt);
     let reply = data.candidates[0].content.parts[0].text;
-    reply = reply.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>');
+    
+    // Xử lý lỗi giao diện Markdown
+    reply = reply
+      .replace(/\n/g, '<br>')
+      .replace(/### (.*?)(<br>|$)/g, '<div style="font-weight:bold; color:#FF8FAB; margin-top:8px; font-size:15px;">$1</div>')
+      .replace(/## (.*?)(<br>|$)/g, '<div style="font-weight:bold; color:#FF8FAB; margin-top:8px; font-size:15px;">$1</div>')
+      .replace(/---/g, '<hr style="border-top: 2px dashed #FFE5EC; margin: 10px 0;">')
+      .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+      .replace(/\*(.*?)\*/g, '<i>$1</i>');
     
     geminiChats[currentQ].push({ role:'bot', text: reply });
     document.getElementById(loadId).remove();
-    chatHistory.innerHTML += `<div style="background:#E5F3FF; color:#1d4ed8; padding:10px 14px; border-radius:12px; align-self:flex-start; max-width:90%; line-height:1.6;">${reply}</div>`;
+    chatHistory.innerHTML += `<div style="background:#E5F3FF; padding:10px 14px; border-radius:12px; font-size:14px; align-self:flex-start; color:#1d4ed8; max-width:90%; line-height:1.6;">${reply}</div>`;
     chatHistory.scrollTop = chatHistory.scrollHeight;
-  } catch(e) { document.getElementById(loadId).innerHTML = `<span style="color:red">Lỗi: ${e.message}</span>`; }
+  } catch(e) {
+    document.getElementById(loadId).innerHTML = '<span style="color:#ef4444">Chi tiết lỗi từ Google: <br>' + e.message + '</span>';
+    console.error("Lỗi Gemini:", e);
+  }
 }
 
 /* --- MODULE 7: BACKUP --- */
