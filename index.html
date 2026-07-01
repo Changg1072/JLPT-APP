@@ -499,6 +499,7 @@ auth.onAuthStateChanged(user => {
        cloudActions.style.opacity = '1';
        cloudActions.style.pointerEvents = 'auto';
     }
+    syncFromCloud();
   } else {
     btnLogin.classList.remove('hidden');
     userProfile.classList.add('hidden');
@@ -596,6 +597,9 @@ function saveData() {
   localStorage.setItem('jlpt_userStats', JSON.stringify(userStats));
   localStorage.setItem(LS_KEY, JSON.stringify(quizData));
   updateDashCounters();
+  if(currentUser){
+      syncToCloud();
+  }
 }
 
 function updateDashCounters() {
