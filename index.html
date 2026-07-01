@@ -1119,6 +1119,19 @@ function clearAllData() {
 }
 function closePopup(id) { document.getElementById(id).classList.remove('open'); }
 function handleOverlay(e, id) { if (e.target === document.getElementById(id)) closePopup(id); }
+
+document.getElementById("gemini-input").addEventListener("keydown", function(e){
+
+    if(e.key==="Enter"){
+
+        e.preventDefault();
+
+        sendToGemini();
+
+    }
+
+});
+
 </script>
 </body>
 </html>
