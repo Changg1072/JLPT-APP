@@ -11,8 +11,12 @@
   <script src="https://cdn.tailwindcss.com"></script>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <!-- FIREBASE SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   
   <script>
     tailwind.config = { theme: { extend: { fontFamily: { sans: ['Quicksand','sans-serif'], jp: ['"M PLUS Rounded 1c"','sans-serif'] } } } }
@@ -24,7 +28,7 @@
     .screen { display:none; width: 100%; max-width: 800px; padding: 20px; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh;}
     .screen.active { display:flex; animation: fadeSlide 0.3s ease-out; }
 
-    .glass-panel { background: rgba(255, 255, 255, 0.9); border-radius: 2rem; border: 4px solid #FFE5EC; padding: 2rem; box-shadow: 0 10px 25px rgba(255, 143, 171, 0.1); backdrop-filter: blur(8px); width: 100%; }
+    .glass-panel { background: rgba(255, 255, 255, 0.9); border-radius: 2rem; border: 4px solid #FFE5EC; padding: 2rem; box-shadow: 0 10px 25px rgba(255, 143, 171, 0.1); backdrop-filter: blur(8px); width: 100%; position: relative;}
     .title-pink { font-size: 28px; font-weight: 700; color: #FF8FAB; margin-bottom: 6px; text-align: center; }
     
     .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; width: 100%; margin-top: 20px; }
@@ -37,13 +41,13 @@
     .btn-pink:hover { transform: translateY(2px); box-shadow: 0 3px 0 #d86c8f; }
     .btn-pink:active { transform: translateY(5px); box-shadow: none; }
     
-    .btn-green { background: #4ade80; box-shadow: 0 5px 0 #16a34a; color: white; }
+    .btn-green { background: #4ade80; box-shadow: 0 5px 0 #16a34a; color: white; border: none; font-weight: 700; border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.1s;}
     .btn-green:hover { transform: translateY(2px); box-shadow: 0 3px 0 #16a34a; }
 
-    .btn-blue { background: #60a5fa; box-shadow: 0 5px 0 #3b82f6; color: white; }
+    .btn-blue { background: #60a5fa; box-shadow: 0 5px 0 #3b82f6; color: white; border: none; font-weight: 700; border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.1s;}
     .btn-blue:hover { transform: translateY(2px); box-shadow: 0 3px 0 #3b82f6; }
 
-    .btn-outline { background: white; border: 2px solid #E5E7EB; color: #4B5563; font-weight: 700; border-radius: 14px; padding: 12px 20px; cursor: pointer;}
+    .btn-outline { background: white; border: 2px solid #E5E7EB; color: #4B5563; font-weight: 700; border-radius: 14px; padding: 12px 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.15s;}
     .btn-outline:hover { background: #F3F4F6; }
 
     .data-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
@@ -58,7 +62,6 @@
     #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
     .toast { background: white; border-left: 4px solid #4ade80; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); animation: fadeSlide 0.3s ease-out; font-weight: 700; font-size: 14px; }
 
-    /* QUIZ CORE CSS */
     .opt-btn { width:100%; text-align:left; padding:14px 18px; border-radius:16px; border:3px solid #E5F3FF; background:white; color:#5B4B49; font-family:'M PLUS Rounded 1c',sans-serif; font-size:16px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:10px; transition:background .15s,border-color .15s,transform .1s; margin-bottom:10px; }
     .opt-btn:hover:not(:disabled){ background:#E5F3FF; border-color:#93c5fd; transform:translateX(3px); }
     .opt-btn.correct{ border-color:#4ade80; background:#E5FFE9; color:#166534; }
@@ -85,18 +88,31 @@
     .popup-title { font-size:18px; font-weight:700; color:#FF8FAB; display:flex; align-items:center; gap:8px; margin-bottom:12px; }
     .popup-sub { font-size:13px; color:#9CA3AF; margin-bottom:12px; line-height:1.6; }
     
-    /* Grammar Checkbox List */
-    .grammar-list-box { max-height: 150px; overflow-y: auto; background: white; border: 2px solid #E5F3FF; border-radius: 12px; padding: 10px; margin-bottom: 15px; }
-    .gram-check-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 14px; color: #4B5563; cursor: pointer; }
+    .grammar-list-box { overflow-y: auto; background: white; border-radius: 12px; padding: 10px; }
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
 <div id="toast-container"></div>
 
+<!-- 🏠 MÀN HÌNH CHÍNH (DASHBOARD) -->
 <div id="screen-dashboard" class="screen active">
   <div class="glass-panel">
-    <div class="text-6xl mb-4 bounce text-center">🌸🐰🍡</div>
+    
+    <!-- THANH NGƯỜI DÙNG -->
+    <div id="user-panel" class="absolute top-4 right-6 z-50 flex items-center gap-2">
+      <button id="btn-login" class="bg-white text-pink-500 font-bold px-4 py-2 rounded-full border-2 border-pink-200 shadow-sm text-sm hover:bg-pink-50 transition flex items-center gap-2" onclick="loginGoogle()">
+        <i class="ti ti-brand-google"></i> Đăng nhập Gmail
+      </button>
+      <div id="user-profile" class="hidden items-center gap-2 bg-white px-3 py-1 rounded-full border-2 border-pink-200 shadow-sm">
+        <img id="user-avatar" src="" alt="avatar" class="w-7 h-7 rounded-full">
+        <span id="user-name" class="font-bold text-sm text-gray-700"></span>
+        <button onclick="logout()" class="text-red-400 hover:text-red-600 ml-2" title="Đăng xuất"><i class="ti ti-logout"></i></button>
+      </div>
+    </div>
+
+    <div class="text-6xl mb-4 mt-6 bounce text-center">🌸🐰🍡</div>
     <h1 class="title-pink">JLPT AI Hub</h1>
     <p class="text-center text-gray-400 mb-6 text-sm">Hệ sinh thái ôn thi JLPT thông minh</p>
     
@@ -129,40 +145,44 @@
   </div>
 </div>
 
+<!-- 📚 MODULE 1: QUẢN LÝ NGỮ PHÁP (Có Thư mục) -->
 <div id="screen-grammar" class="screen">
   <div class="glass-panel" style="max-width: 800px;">
-    <div class="flex justify-between items-center mb-4">
+    <div class="flex justify-between items-center mb-6">
       <button class="btn-outline px-4 py-2" onclick="switchScreen('screen-dashboard')"><i class="ti ti-arrow-left"></i></button>
       <h2 class="title-pink mb-0 text-2xl">Quản lý Ngữ Pháp</h2>
       <div class="flex gap-2">
+        <button class="btn-pink px-4 py-2" onclick="document.getElementById('modal-add-grammar').classList.add('open')"><i class="ti ti-plus"></i> Thêm thủ công</button>
         <label class="btn-blue px-4 py-2 cursor-pointer mb-0 text-sm font-bold rounded-xl flex items-center gap-1">
           <i class="ti ti-file-spreadsheet"></i> Nhập Excel
           <input type="file" id="grammar-excel-upload" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleGrammarExcelUpload(event)">
         </label>
-        <button class="btn-pink px-4 py-2" onclick="document.getElementById('modal-add-grammar').classList.add('open')"><i class="ti ti-plus"></i> Thêm</button>
       </div>
     </div>
 
-    <div class="bg-blue-50 text-blue-700 text-xs p-3 rounded-xl mb-4 font-bold border border-blue-100 flex items-start gap-2">
-      <i class="ti ti-info-circle text-lg"></i>
-      <div>
-        <b>Định dạng file Excel hỗ trợ:</b> Hệ thống tự động nhận dạng các cột có chứa từ khóa:<br>
-        - <b>Ngữ pháp:</b> "ngữ pháp", "grammar"<br>
-        - <b>Ý nghĩa:</b> "nghĩa", "meaning"<br>
-        - <b>Ví dụ:</b> "ví dụ", "example"<br>
-        - <b>Cấp độ:</b> "cấp độ", "level" (Mặc định N3)
-      </div>
+    <!-- Cấu trúc Thư mục -->
+    <div id="grammar-folders-view">
+        <h3 class="font-bold text-gray-500 mb-3"><i class="ti ti-folder"></i> Danh sách Thư mục Ngữ Pháp</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="grammar-folder-list"></div>
     </div>
     
-    <div class="overflow-x-auto">
-      <table class="data-table" id="grammar-table">
-        <thead><tr><th>Cấp độ</th><th>Ngữ pháp</th><th>Ý nghĩa</th><th>Thao tác</th></tr></thead>
-        <tbody></tbody>
-      </table>
+    <!-- Nội dung Thư mục -->
+    <div id="grammar-table-view" class="hidden">
+        <div class="flex items-center justify-between mb-3 bg-pink-50 p-3 rounded-xl border border-pink-100">
+            <div class="font-bold text-pink-600"><i class="ti ti-folder-open"></i> Thư mục: <span id="grammar-current-folder"></span></div>
+            <button class="btn-outline py-1 px-3 text-sm bg-white" onclick="backToGrammarFolders()"><i class="ti ti-arrow-back-up"></i> Quay lại</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="data-table" id="grammar-table">
+            <thead><tr><th>Cấp độ</th><th>Ngữ pháp</th><th>Ý nghĩa</th><th>Thao tác</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
     </div>
   </div>
 </div>
 
+<!-- 📖 MODULE 2: QUẢN LÝ TỪ VỰNG (Có Thư mục) -->
 <div id="screen-vocab" class="screen">
   <div class="glass-panel" style="max-width: 800px;">
     <div class="flex justify-between items-center mb-4">
@@ -171,7 +191,7 @@
       
       <div class="flex gap-2">
         <button class="btn-outline px-4 py-2 text-red-500 border-red-200 hover:bg-red-50" onclick="clearVocabBank()">
-          <i class="ti ti-trash"></i> Xóa tất cả
+          <i class="ti ti-alert-triangle"></i> Xóa tất cả từ vựng
         </button>
         <label class="btn-blue px-4 py-2 cursor-pointer mb-0 text-sm font-bold rounded-xl flex items-center gap-1">
           <i class="ti ti-file-spreadsheet"></i> Nhập Excel
@@ -184,129 +204,140 @@
       </div>
     </div>
 
-    <div class="bg-blue-50 text-blue-700 text-xs p-3 rounded-xl mb-4 font-bold border border-blue-100 flex items-start gap-2">
-      <i class="ti ti-info-circle text-lg"></i>
-      <div>
-        <b>Định dạng file Excel hỗ trợ:</b> Hệ thống sẽ tự động nhận dạng các cột có tiêu đề chứa:<br>
-        - <b>Từ vựng:</b> "word", "từ vựng", "kanji"<br>
-        - <b>Cách đọc:</b> "reading", "cách đọc", "hiragana", "kana"<br>
-        - <b>Ý nghĩa:</b> "meaning", "ý nghĩa", "nghĩa"<br>
-        - <b>Cấp độ:</b> "level", "cấp độ"
-      </div>
-    </div>
-
     <div id="pdf-status" class="text-sm text-center text-pink-500 mb-4 font-bold hidden">Đang xử lý bằng AI... Vui lòng đợi 🐰⏳</div>
     
-    <div class="overflow-x-auto">
-      <table class="data-table" id="vocab-table">
-        <thead><tr><th>Từ vựng</th><th>Cách đọc</th><th>Ý nghĩa</th><th>Cấp độ</th><th>Thao tác</th></tr></thead>
-        <tbody></tbody>
-      </table>
+    <!-- Cấu trúc Thư mục -->
+    <div id="vocab-folders-view">
+        <h3 class="font-bold text-gray-500 mb-3"><i class="ti ti-folder"></i> Danh sách Thư mục Từ Vựng</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="vocab-folder-list"></div>
+    </div>
+    
+    <!-- Nội dung Thư mục -->
+    <div id="vocab-table-view" class="hidden">
+        <div class="flex items-center justify-between mb-3 bg-blue-50 p-3 rounded-xl border border-blue-100">
+            <div class="font-bold text-blue-600"><i class="ti ti-folder-open"></i> Thư mục: <span id="vocab-current-folder"></span></div>
+            <div class="flex gap-2">
+              <button class="btn-pink py-1 px-3 text-sm" onclick="document.getElementById('modal-add-vocab').classList.add('open')"><i class="ti ti-plus"></i> Thêm từ</button>
+              <button class="btn-outline py-1 px-3 text-sm bg-white" onclick="backToVocabFolders()"><i class="ti ti-arrow-back-up"></i> Quay lại</button>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="data-table" id="vocab-table">
+            <thead><tr><th>Từ vựng</th><th>Cách đọc</th><th>Ý nghĩa</th><th>Cấp độ</th><th>Thao tác</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
     </div>
   </div>
 </div>
 
+<!-- ✨ MODULE 3: AI SINH ĐỀ NÂNG CẤP -->
 <div id="screen-generate" class="screen">
-  <div class="glass-panel" style="max-width: 600px;">
+  <div class="glass-panel" style="max-width: 700px;">
     <div class="flex items-center gap-4 mb-6">
       <button class="btn-outline px-4 py-2" onclick="switchScreen('screen-dashboard')"><i class="ti ti-arrow-left"></i></button>
       <h2 class="title-pink mb-0 text-2xl flex-1 text-left">Tạo Đề Thông Minh</h2>
     </div>
-
+    
     <div class="bg-blue-50 p-4 rounded-2xl border-2 border-blue-100 mb-4 text-sm text-blue-800 font-medium">
-      💡 <b>Mẹo AI:</b> Chọn các ngữ pháp bạn muốn ôn. Nếu KHÔNG chọn ngữ pháp nào, AI sẽ tự động sinh bài kiểm tra <b>Từ vựng & Hán tự</b> dựa trên kho từ vựng!
+      💡 <b>Mẹo:</b> Chọn các thư mục bạn muốn ôn tập. Click vào tên thư mục Ngữ pháp để chọn từng cấu trúc cụ thể bên trong.
     </div>
 
-    <label class="block text-sm font-bold text-gray-500 mb-2">Chọn Ngữ pháp muốn ôn (Tùy chọn):</label>
-    <div class="grammar-list-box" id="gen-grammar-list">
-      </div>
+    <!-- Chọn Thư mục muốn ôn -->
+    <div class="grid grid-cols-2 gap-4 mb-4">
+        <div class="bg-white border-2 border-blue-100 rounded-xl p-3">
+            <label class="block text-sm font-bold text-blue-700 mb-2 border-b-2 border-blue-50 pb-2"><i class="ti ti-vocabulary"></i> Chọn thư mục Từ vựng</label>
+            <div class="grammar-list-box mb-0 border-none p-0" id="gen-vocab-folders" style="max-height: 200px;"></div>
+        </div>
+        <div class="bg-white border-2 border-pink-100 rounded-xl p-3">
+            <label class="block text-sm font-bold text-pink-700 mb-2 border-b-2 border-pink-50 pb-2"><i class="ti ti-books"></i> Chọn thư mục Ngữ pháp</label>
+            <div class="grammar-list-box mb-0 border-none p-0" id="gen-grammar-folders" style="max-height: 200px;"></div>
+        </div>
+    </div>
 
-    <div class="grid grid-cols-2 gap-4 mb-6">
+    <div class="grid grid-cols-3 gap-4 mb-6">
       <div>
-        <label class="block text-sm font-bold text-gray-500 mb-2">Cấp độ (Tham khảo)</label>
-        <select id="gen-level" class="kawaii-input">
-          <option value="N3">N3</option>
-          <option value="N4">N4</option>
-          <option value="N5">N5</option>
-          <option value="N2">N2</option>
-        </select>
+        <label class="block text-sm font-bold text-gray-500 mb-2">Cấp độ</label>
+        <select id="gen-level" class="kawaii-input"><option value="N3">N3</option><option value="N4">N4</option><option value="N5">N5</option><option value="N2">N2</option></select>
       </div>
       <div>
         <label class="block text-sm font-bold text-gray-500 mb-2">Số lượng câu</label>
         <select id="gen-count" class="kawaii-input">
-          <option value="5">5 câu (Test nhanh)</option>
-          <option value="10">10 câu</option>
-          <option value="20">20 câu</option>
+            <option value="5">5 câu</option>
+            <option value="10">10 câu</option>
+            <option value="20">20 câu</option>
+            <option value="30">30 câu</option>
+            <option value="40">40 câu</option>
+            <option value="50">50 câu</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-bold text-gray-500 mb-2">Độ khó</label>
+        <select id="gen-difficulty" class="kawaii-input">
+            <option value="Dễ">Dễ</option>
+            <option value="Trung bình" selected>Vừa (Chuẩn JLPT)</option>
+            <option value="Khó">Khó (Đánh đố)</option>
         </select>
       </div>
     </div>
-
-    <button id="btn-generate" class="btn-pink w-full py-4 text-lg" onclick="generateQuiz()"><i class="ti ti-sparkles"></i> AI Sinh Đề Tự Động</button>
-    <div id="gen-status" class="text-center text-pink-500 mt-4 font-bold hidden">Gemini đang suy nghĩ... (Đợi chút xíu nha 🌸)</div>
-
+    
+    <button id="btn-generate" class="btn-pink w-full py-4 text-lg" onclick="generateQuiz()"><i class="ti ti-sparkles"></i> Bắt đầu Sinh Đề</button>
+    <div id="gen-status" class="text-center text-pink-500 mt-4 font-bold hidden">Gemini đang suy nghĩ... 🌸</div>
+    
     <div class="mt-6 border-t-2 border-dashed border-pink-100 pt-6">
-      <button class="btn-outline w-full py-3 text-pink-500 border-pink-200 hover:bg-pink-50" onclick="document.getElementById('modal-manual-quiz').classList.add('open')">
-        <i class="ti ti-file-import"></i> Hoặc Tạo Đề Thủ Công (JSON)
-      </button>
+      <button class="btn-outline w-full py-3 text-pink-500 border-pink-200 hover:bg-pink-50" onclick="document.getElementById('modal-manual-quiz').classList.add('open')"><i class="ti ti-file-import"></i> Hoặc Tạo Đề Thủ Công (JSON)</button>
     </div>
-
   </div>
 </div>
 
+<!-- 📊 MODULE 5: THỐNG KÊ -->
 <div id="screen-stats" class="screen">
   <div class="glass-panel" style="max-width:600px;">
     <div class="flex items-center gap-4 mb-6">
-      <button class="btn-outline px-4 py-2" onclick="switchScreen('screen-dashboard')">
-        <i class="ti ti-arrow-left"></i>
-      </button>
+      <button class="btn-outline px-4 py-2" onclick="switchScreen('screen-dashboard')"><i class="ti ti-arrow-left"></i></button>
       <h2 class="title-pink mb-0 text-2xl flex-1 text-left">Thống kê & Bộ đề</h2>
     </div>
-
     <div class="grid grid-cols-2 gap-4 mb-6">
       <div class="bg-green-50 border-2 border-green-200 p-4 rounded-2xl text-center">
-        <div class="text-3xl font-bold text-green-500" id="stat-total-quizzes">0</div>
-        <div class="text-xs text-gray-500 mt-1 uppercase font-bold">Lượt làm bài</div>
+        <div class="text-3xl font-bold text-green-500" id="stat-total-quizzes">0</div><div class="text-xs text-gray-500 mt-1 uppercase font-bold">Lượt làm bài</div>
       </div>
       <div class="bg-blue-50 border-2 border-blue-200 p-4 rounded-2xl text-center">
-        <div class="text-3xl font-bold text-blue-500" id="stat-avg-score">0%</div>
-        <div class="text-xs text-gray-500 mt-1 uppercase font-bold">Tỉ lệ đúng TB</div>
+        <div class="text-3xl font-bold text-blue-500" id="stat-avg-score">0%</div><div class="text-xs text-gray-500 mt-1 uppercase font-bold">Tỉ lệ đúng TB</div>
       </div>
     </div>
-
-    <h3 class="font-bold text-gray-500 text-sm uppercase mb-3 flex items-center gap-2">
-      <i class="ti ti-sparkles text-pink-400"></i> Bộ đề đã tạo
-    </h3>
+    <h3 class="font-bold text-gray-500 text-sm uppercase mb-3 flex items-center gap-2"><i class="ti ti-sparkles text-pink-400"></i> Bộ đề đã tạo</h3>
     <div id="deck-list" class="flex flex-col gap-3 mb-6"></div>
-
-    <h3 class="font-bold text-gray-500 text-sm uppercase mb-3 flex items-center gap-2">
-      <i class="ti ti-history"></i> Lịch sử gần đây
-    </h3>
-    <div id="history-list" class="flex flex-col gap-3 max-h-64 overflow-y-auto pr-2"></div>
   </div>
 </div>
 
+<!-- MÀN HÌNH QUẢN LÝ DỮ LIỆU CÓ THÊM NÚT ĐỒNG BỘ ĐÁM MÂY -->
 <div id="screen-backup" class="screen">
   <div class="glass-panel" style="max-width: 600px;">
     <div class="flex items-center gap-4 mb-6">
       <button class="btn-outline px-4 py-2" onclick="switchScreen('screen-dashboard')"><i class="ti ti-arrow-left"></i></button>
       <h2 class="title-pink mb-0 text-2xl flex-1 text-left">Quản lý Dữ liệu</h2>
     </div>
-    
-    <div class="bg-yellow-50 border-2 border-yellow-200 p-4 rounded-2xl mb-6 text-sm text-yellow-800 font-medium">
-      Mọi dữ liệu (Ngữ pháp, Từ vựng, Đề thi, Lịch sử) đều được lưu cục bộ trên trình duyệt. Hãy Export thường xuyên để backup nhé!
-    </div>
 
-    <div class="flex flex-col gap-4">
-      <button class="btn-green py-3 w-full" onclick="exportData()"><i class="ti ti-download"></i> Tải xuống file Backup (JSON)</button>
-      
-      <div class="relative">
-        <label class="btn-pink btn-outline py-3 w-full flex justify-center cursor-pointer mb-0">
-          <i class="ti ti-upload"></i> Khôi phục từ file Backup
-          <input type="file" accept=".json" class="hidden" onchange="importData(event)">
-        </label>
+    <!-- KHU VỰC CLOUD FIREBASE -->
+    <div class="bg-blue-50 border-2 border-blue-200 p-4 rounded-2xl mb-4">
+      <h3 class="font-bold text-blue-800 text-sm mb-2"><i class="ti ti-cloud"></i> Dữ Liệu Đám Mây</h3>
+      <p class="text-xs text-blue-600 mb-3">Đăng nhập Gmail ở Màn Hình Chính để mở khóa tính năng này. Giúp bạn đồng bộ dữ liệu ôn thi trên mọi thiết bị máy tính, điện thoại!</p>
+      <div class="flex gap-2" id="cloud-actions" style="opacity: 0.5; pointer-events: none;">
+        <button class="btn-blue flex-1 py-3" onclick="syncToCloud()"><i class="ti ti-cloud-upload"></i> Đẩy Lên Mây</button>
+        <button class="btn-green flex-1 py-3" onclick="syncFromCloud()"><i class="ti ti-cloud-download"></i> Tải Về Máy</button>
       </div>
+    </div>
+    
+    <hr class="border-t-2 border-pink-100 my-4">
 
-      <button class="btn-outline py-3 w-full text-red-500 border-red-200 hover:bg-red-50" onclick="clearAllData()"><i class="ti ti-trash"></i> Xóa toàn bộ dữ liệu</button>
+    <!-- KHU VỰC OFFLINE (JSON FILE) -->
+    <div class="flex flex-col gap-3">
+      <button class="btn-outline font-bold py-3 w-full border-gray-300" onclick="exportData()"><i class="ti ti-download"></i> Tải xuống file Backup (JSON)</button>
+      <label class="btn-pink btn-outline py-3 w-full flex justify-center cursor-pointer mb-0 text-pink-500 border-pink-200 bg-white hover:bg-pink-50">
+        <i class="ti ti-upload"></i> Khôi phục từ file Backup (JSON)
+        <input type="file" accept=".json" class="hidden" onchange="importData(event)">
+      </label>
+      <button class="btn-outline py-3 w-full text-red-500 border-red-200 hover:bg-red-50 mt-4" onclick="clearAllData()"><i class="ti ti-trash"></i> Xóa toàn bộ dữ liệu máy</button>
     </div>
   </div>
 </div>
@@ -320,7 +351,6 @@
           <button class="btn-outline px-4 py-2" onclick="nextQuestion()">Next »</button>
         </div>
     </div>
-    
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:14px;font-weight:700;color:#9CA3AF">
       <span id="q-counter">Cau 1 / 9</span>
       <span style="display:flex;align-items:center;gap:4px;color:#FF8FAB"><i class="ti ti-star"></i> <span id="live-score">0</span> diem</span>
@@ -333,14 +363,11 @@
     </div>
 
     <div id="options-wrap"></div>
-
     <div id="tools-wrap" style="display:flex; gap:10px; margin-bottom:12px;">
       <button class="hint-btn w-full justify-center mb-0" id="hint-btn" onclick="toggleHint()"><i class="ti ti-bulb"></i> Gợi ý nhe~</button>
       <button class="btn-pink w-full mb-0 px-3 py-2 text-sm" onclick="openGeminiChat()"><i class="ti ti-sparkles"></i> Gia sư AI</button>
     </div>
-
     <div id="hint-box" style="display:none" class="hint-box anim-in"></div>
-
     <div id="feedback-area" style="display:none" class="feedback-box anim-in">
       <div style="font-weight:700;font-size:15px;margin-bottom:4px;display:flex;align-items:center;gap:6px" id="fb-head"></div>
       <div id="fb-body"></div>
@@ -353,19 +380,23 @@
     <p style="text-align:center;font-size:13px;color:#9CA3AF;margin-bottom:4px">KET QUA</p>
     <div style="font-size:60px;font-weight:700;text-align:center;color:#FF8FAB;margin-bottom:2px" id="result-score"></div>
     <p style="text-align:center;color:#9CA3AF;font-size:14px;margin-bottom:16px" id="result-total">/ 9 cau</p>
-
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-num" id="stat-correct" style="color:#4ade80">0</div><div class="stat-lbl">Dung</div></div>
       <div class="stat-card"><div class="stat-num" id="stat-wrong"   style="color:#f87171">0</div><div class="stat-lbl">Sai</div></div>
       <div class="stat-card"><div class="stat-num" id="stat-emoji">🌸</div><div class="stat-lbl">Danh gia</div></div>
     </div>
-
+    
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
-      <button class="btn-pink py-3 w-full" onclick="startQuiz(true)"><i class="ti ti-refresh"></i> Làm lại bộ này</button>
-      <button class="btn-outline py-3 w-full text-pink-500 border-pink-200" onclick="switchScreen('screen-generate')"><i class="ti ti-sparkles"></i> Sinh bộ mới</button>
+      <!-- NÚT SINH THÊM CÂU HỎI MỚI VÀO ĐÂY -->
+      <button class="btn-green py-3 w-full border-green-200 bg-green-50 text-green-700 hover:bg-green-100 font-bold mb-2" onclick="generateMoreQuestions()">
+        <i class="ti ti-circle-plus text-lg"></i> Sinh thêm câu hỏi cho bộ đề này
+      </button>
+
+      <button class="btn-pink py-3 w-full" onclick="startQuiz(true)"><i class="ti ti-refresh"></i> Làm lại bộ này từ đầu</button>
+      <button class="btn-outline py-3 w-full text-pink-500 border-pink-200" onclick="switchScreen('screen-generate')"><i class="ti ti-sparkles"></i> Sinh một bộ mới</button>
       <button class="btn-outline py-3 w-full" onclick="switchScreen('screen-dashboard')"><i class="ti ti-home"></i> Về trang chủ</button>
     </div>
-
+    
     <div id="review-section" style="display:none;margin-top:4px">
       <div style="font-size:14px;font-weight:700;color:#9CA3AF;margin-bottom:10px;display:flex;align-items:center;gap:6px"><i class="ti ti-alert-circle"></i> Cac cau lam sai</div>
       <div id="review-list" class="max-h-64 overflow-y-auto"></div>
@@ -373,6 +404,7 @@
   </div>
 </div>
 
+<!-- ================= MODALS ================= -->
 <div class="popup-overlay" id="popup-gemini" onclick="handleOverlay(event,'popup-gemini')">
   <div class="popup-box">
     <div class="popup-title"><i class="ti ti-sparkles"></i> Gia sư AI Gemini</div>
@@ -386,30 +418,32 @@
 
 <div class="popup-overlay" id="modal-add-grammar" onclick="handleOverlay(event,'modal-add-grammar')">
   <div class="popup-box" style="max-height: max-content;">
-    <div class="popup-title"><i class="ti ti-plus"></i> Thêm Ngữ pháp</div>
-    
-    <div class="bg-blue-50 text-blue-700 text-xs p-3 rounded-xl mb-4 font-bold border border-blue-100">
-      📝 Mẫu nhập liệu:<br>
-      • Ngữ pháp: 〜たびに<br>
-      • Ý nghĩa: Mỗi khi...<br>
-      • Ví dụ: 給料をもらうたびに貯金する。
-    </div>
-
+    <div class="popup-title"><i class="ti ti-plus"></i> Thêm Ngữ pháp thủ công</div>
     <input type="text" id="gram-jp" class="kawaii-input" placeholder="Nhập ngữ pháp tiếng Nhật...">
     <input type="text" id="gram-vi" class="kawaii-input" placeholder="Nhập ý nghĩa tiếng Việt...">
     <textarea id="gram-ex" class="kawaii-input" placeholder="Nhập câu ví dụ..." rows="2"></textarea>
-    
     <select id="gram-lvl" class="kawaii-input">
-      <option value="N3">Cấp độ: N3</option>
-      <option value="N4">Cấp độ: N4</option>
-      <option value="N5">Cấp độ: N5</option>
-      <option value="N2">Cấp độ: N2</option>
-      <option value="N1">Cấp độ: N1</option>
+      <option value="N3">Cấp độ: N3</option><option value="N4">Cấp độ: N4</option><option value="N5">Cấp độ: N5</option><option value="N2">Cấp độ: N2</option>
     </select>
-    
     <div class="flex gap-2 mt-4">
       <button class="btn-outline flex-1 py-2" onclick="closePopup('modal-add-grammar')">Hủy</button>
-      <button class="btn-pink flex-1 py-2" onclick="saveGrammar()">Lưu ngữ pháp</button>
+      <button class="btn-pink flex-1 py-2" onclick="saveGrammar()">Lưu vào "Tự nhập"</button>
+    </div>
+  </div>
+</div>
+
+<div class="popup-overlay" id="modal-add-vocab" onclick="handleOverlay(event,'modal-add-vocab')">
+  <div class="popup-box" style="max-height: max-content;">
+    <div class="popup-title"><i class="ti ti-plus"></i> Thêm Từ vựng thủ công</div>
+    <input type="text" id="voc-word" class="kawaii-input" placeholder="Từ vựng (Kanji)...">
+    <input type="text" id="voc-read" class="kawaii-input" placeholder="Cách đọc (Hiragana)...">
+    <input type="text" id="voc-mean" class="kawaii-input" placeholder="Ý nghĩa tiếng Việt...">
+    <select id="voc-lvl" class="kawaii-input">
+      <option value="N3">Cấp độ: N3</option><option value="N4">Cấp độ: N4</option><option value="N5">Cấp độ: N5</option><option value="N2">Cấp độ: N2</option>
+    </select>
+    <div class="flex gap-2 mt-4">
+      <button class="btn-outline flex-1 py-2" onclick="closePopup('modal-add-vocab')">Hủy</button>
+      <button class="btn-pink flex-1 py-2" onclick="saveVocab()">Lưu vào "Tự nhập"</button>
     </div>
   </div>
 </div>
@@ -417,29 +451,9 @@
 <div class="popup-overlay" id="modal-manual-quiz" onclick="handleOverlay(event,'modal-manual-quiz')">
   <div class="popup-box" style="max-height: 90vh;">
     <div class="popup-title"><i class="ti ti-file-import"></i> Tạo Đề Thủ Công</div>
-    <p class="popup-sub">
-      Paste Array JSON vào ô dưới để tạo một bộ đề kiểm tra mới.<br>
-      Các trường bắt buộc: <b>jp, options, ans, explain, hint</b>.
-    </p>
-    
     <input type="text" id="manual-deck-name" class="kawaii-input mb-2" placeholder="Tên bộ đề (VD: Đề test Từ vựng tuần 1)...">
-    <select id="manual-deck-level" class="kawaii-input mb-4">
-      <option value="N3">Cấp độ: N3</option>
-      <option value="N4">Cấp độ: N4</option>
-      <option value="N5">Cấp độ: N5</option>
-      <option value="N2">Cấp độ: N2</option>
-    </select>
-    
-    <textarea class="kawaii-input" id="manual-import-json" style="height: 180px; font-family: monospace; font-size: 12px; resize: vertical;" placeholder='[
-  {
-    "jp": "Câu hỏi...",
-    "options": ["A", "B", "C"],
-    "ans": 0,
-    "explain": "Giải thích...",
-    "hint": "Gợi ý..."
-  }
-]'></textarea>
-    
+    <select id="manual-deck-level" class="kawaii-input mb-4"><option value="N3">N3</option></select>
+    <textarea class="kawaii-input" id="manual-import-json" style="height: 180px; font-family: monospace; font-size: 12px; resize: vertical;" placeholder='[{"jp": "Câu hỏi...","options": ["A", "B", "C"],"ans": 0,"explain": "Giải thích...","hint": "Gợi ý..."}]'></textarea>
     <div class="flex gap-2 mt-4">
       <button class="btn-outline flex-1 py-2" onclick="closePopup('modal-manual-quiz')">Hủy</button>
       <button class="btn-pink flex-1 py-2" onclick="importManualQuiz()"><i class="ti ti-check"></i> Lưu & Làm Bài</button>
@@ -449,60 +463,133 @@
 
 <script>
 /* =========================================================
+   FIREBASE INIT & AUTHENTICATION
+========================================================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyA1RDD_VxsAHyd80I8rYFEG20Dg8VB18So",
+  authDomain: "jlpt-ai-hub.firebaseapp.com",
+  projectId: "jlpt-ai-hub",
+  storageBucket: "jlpt-ai-hub.firebasestorage.app",
+  messagingSenderId: "352688092314",
+  appId: "1:352688092314:web:ab5203ed4a71c772b45b23"
+};
+
+// Khởi tạo Firebase (Sử dụng cú pháp compat)
+firebase.initializeApp(firebaseConfig);
+
+// Khai báo các biến toàn cục để dùng trong hàm khác
+const auth = firebase.auth();
+const db = firebase.firestore();
+const googleProvider = new firebase.auth.GoogleAuthProvider();
+let currentUser = null;
+
+auth.onAuthStateChanged(user => {
+  currentUser = user;
+  const btnLogin = document.getElementById('btn-login');
+  const userProfile = document.getElementById('user-profile');
+  const cloudActions = document.getElementById('cloud-actions');
+
+  if(user) {
+    btnLogin.classList.add('hidden');
+    userProfile.classList.remove('hidden');
+    userProfile.classList.add('flex');
+    document.getElementById('user-name').innerText = user.displayName;
+    document.getElementById('user-avatar').src = user.photoURL;
+    if(cloudActions) {
+       cloudActions.style.opacity = '1';
+       cloudActions.style.pointerEvents = 'auto';
+    }
+  } else {
+    btnLogin.classList.remove('hidden');
+    userProfile.classList.add('hidden');
+    userProfile.classList.remove('flex');
+    if(cloudActions) {
+       cloudActions.style.opacity = '0.5';
+       cloudActions.style.pointerEvents = 'none';
+    }
+  }
+});
+
+async function loginGoogle() { try { await auth.signInWithPopup(googleProvider); showToast("🌸 Đăng nhập thành công!"); } catch(e) { showToast("❌ Lỗi đăng nhập: " + e.message); } }
+async function logout() { await auth.signOut(); showToast("👋 Đã đăng xuất khỏi tài khoản."); }
+
+async function syncToCloud() {
+  if(!currentUser) return showToast("⚠️ Bạn cần đăng nhập Gmail trước!");
+  showToast("⏳ Đang lưu dữ liệu lên đám mây...");
+  try {
+    const payload = {
+      grammarBank: JSON.stringify(grammarBank),
+      vocabBank: JSON.stringify(vocabBank),
+      userStats: JSON.stringify(userStats),
+      quizData: JSON.stringify(quizData),
+      deckBank: JSON.stringify(deckBank),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    await db.collection('users').doc(currentUser.uid).set(payload);
+    showToast("☁️ Đã ĐỒNG BỘ thành công lên mây!");
+  } catch(e) { showToast("❌ Lỗi lưu dữ liệu: " + e.message); }
+}
+
+async function syncFromCloud() {
+  if(!currentUser) return showToast("⚠️ Bạn cần đăng nhập Gmail trước!");
+  showToast("⏳ Đang tải dữ liệu từ mây về...");
+  try {
+    const doc = await db.collection('users').doc(currentUser.uid).get();
+    if(!doc.exists) return showToast("⚠️ Không tìm thấy dữ liệu nào của bạn trên mây!");
+    const data = doc.data();
+    if(data.grammarBank) grammarBank = JSON.parse(data.grammarBank);
+    if(data.vocabBank) vocabBank = JSON.parse(data.vocabBank);
+    if(data.userStats) userStats = JSON.parse(data.userStats);
+    if(data.quizData) quizData = JSON.parse(data.quizData);
+    if(data.deckBank) deckBank = JSON.parse(data.deckBank);
+    
+    checkAndAssignFolders();
+    saveData(); 
+    renderGrammarFolders(); renderVocabFolders(); updateDashCounters();
+    showToast("☁️ Đã TẢI VỀ MÁY thành công!");
+  } catch(e) { showToast("❌ Lỗi tải dữ liệu: " + e.message); }
+}
+
+/* =========================================================
    CORE LOGIC - JLPT AI HUB
 ========================================================= */
-
-// Thay bằng API Key thật của bạn
-let grammarBank = [];
-let vocabBank = [];
-let userStats = [];
-
-// Quiz Core State
+let grammarBank = []; let vocabBank = []; let userStats = [];
 const LS_KEY = 'quiz_n3_data';
-let quizData = [];
-let currentQ = 0;
-let score = 0;
-let selectedOpt = null;
-let hintShown = false;
-let wrongList = [];
-let userAnswers = [];
-let geminiChats = {};
-let deckBank = [];     
-let activeDeckId = null;
+let quizData = []; let currentQ = 0; let score = 0; let selectedOpt = null;
+let hintShown = false; let wrongList = []; let userAnswers = []; let geminiChats = {};
+let deckBank = []; let activeDeckId = null;
 
-/* --- INIT & DATA MANAGEMENT --- */
+// Hàm tự động thêm label "Mặc định" cho dữ liệu cũ chưa có thư mục
+function checkAndAssignFolders() {
+    let changed = false;
+    grammarBank.forEach(g => { if(!g.folder) { g.folder = "Mặc định"; changed = true; } });
+    vocabBank.forEach(v => { if(!v.folder) { v.folder = "Mặc định"; changed = true; } });
+    if(changed) saveData();
+}
+
 window.onload = () => { 
   loadData(); loadDeckBank();
-  
   if(grammarBank.length === 0) {
-    grammarBank = [
-      { id: Date.now(), grammar: "〜たびに", meaning: "Mỗi khi", level: "N3", example: "給料をもらうたびに貯金する。" },
-      { id: Date.now()+1, grammar: "〜うちに", meaning: "Trong lúc", level: "N3", example: "若いうちに勉強しなさい。" }
-    ];
+    grammarBank = [{ id: Date.now(), grammar: "〜たびに", meaning: "Mỗi khi", level: "N3", example: "給料をもらうたびに貯金する。", folder: "Mặc định" }];
   }
   if(vocabBank.length === 0) {
-    vocabBank = [
-      { id: Date.now(), word: "残業", reading: "ざんぎょう", meaning: "Làm thêm giờ", level: "N3" },
-      { id: Date.now()+1, word: "計画", reading: "けいかく", meaning: "Kế hoạch", level: "N4" }
-    ];
+    vocabBank = [{ id: Date.now(), word: "残業", reading: "ざんぎょう", meaning: "Làm thêm giờ", level: "N3", folder: "Mặc định" }];
   }
-
-  saveData();
-  renderGrammar();
-  renderVocab();
+  checkAndAssignFolders();
+  saveData(); 
+  renderGrammarFolders(); 
+  renderVocabFolders(); 
   updateDashCounters();
 };
 
 function loadDeckBank() { deckBank = JSON.parse(localStorage.getItem('jlpt_deckBank')) || []; }
 function saveDeckBank() { localStorage.setItem('jlpt_deckBank', JSON.stringify(deckBank)); }
-
 function loadData() {
   grammarBank = JSON.parse(localStorage.getItem('jlpt_grammarBank')) || [];
   vocabBank = JSON.parse(localStorage.getItem('jlpt_vocabBank')) || [];
   userStats = JSON.parse(localStorage.getItem('jlpt_userStats')) || [];
   quizData = JSON.parse(localStorage.getItem(LS_KEY)) || [];
 }
-
 function saveData() {
   localStorage.setItem('jlpt_grammarBank', JSON.stringify(grammarBank));
   localStorage.setItem('jlpt_vocabBank', JSON.stringify(vocabBank));
@@ -516,389 +603,333 @@ function updateDashCounters() {
   document.getElementById('dash-vocab-count').innerText = vocabBank.length;
   document.getElementById('dash-quiz-count').innerText = quizData.length;
   
-  const gramList = document.getElementById('gen-grammar-list');
-  gramList.innerHTML = '';
-  if (grammarBank.length === 0) {
-    gramList.innerHTML = '<div class="text-sm text-gray-400 italic">Chưa có ngữ pháp nào. AI sẽ tự động tạo bài tập từ vựng!</div>';
+  // Render Checkbox Thư mục ở trang Sinh đề
+  const vList = document.getElementById('gen-vocab-folders');
+  const gList = document.getElementById('gen-grammar-folders');
+  vList.innerHTML = ''; gList.innerHTML = '';
+  
+  const vFolders = [...new Set(vocabBank.map(v => v.folder || "Mặc định"))];
+  const gFolders = {};
+  grammarBank.forEach(g => {
+      const f = g.folder || "Mặc định";
+      if(!gFolders[f]) gFolders[f] = [];
+      gFolders[f].push(g);
+  });
+
+  if(vFolders.length === 0) {
+      vList.innerHTML = '<div class="text-xs text-gray-400 italic">Trống</div>';
   } else {
-    grammarBank.forEach(g => {
-      gramList.innerHTML += `
-        <label class="gram-check-item cursor-pointer">
-          <input type="checkbox" class="gram-check" value="${g.grammar}"> 
-          <span class="font-bold text-pink-500">[${g.level}]</span> ${g.grammar} (${g.meaning})
-        </label>
-      `;
-    });
+      vFolders.forEach(f => { 
+          vList.innerHTML += `<label class="flex items-center gap-2 mb-2 p-2 bg-blue-50 rounded cursor-pointer hover:bg-blue-100 transition"><input type="checkbox" class="gen-vocab-folder" value="${f}"> <i class="ti ti-folder text-blue-500"></i> <span class="font-bold text-blue-700">${f}</span></label>`; 
+      });
+  }
+
+  if (Object.keys(gFolders).length === 0) {
+      gList.innerHTML = '<div class="text-xs text-gray-400 italic">Trống</div>';
+  } else {
+      let fIndex = 0;
+      for (let f in gFolders) {
+          fIndex++;
+          let itemsHtml = gFolders[f].map(g => `<label class="flex items-center gap-2 mb-1 text-sm text-gray-600 cursor-pointer hover:bg-pink-50 p-1 rounded"><input type="checkbox" class="gen-gram-item" value="${g.grammar}"> <span><span class="text-pink-500 font-bold">[${g.level}]</span> ${g.grammar}</span></label>`).join('');
+          
+          gList.innerHTML += `
+          <div class="mb-2">
+              <div class="flex items-center gap-2 bg-pink-50 px-2 py-1 rounded cursor-pointer">
+                 <input type="checkbox" class="folder-check" onchange="toggleFolderCheck(this, 'gf-${fIndex}')" title="Chọn tất cả">
+                 <span class="font-bold text-pink-700 flex-1 flex items-center justify-between" onclick="toggleFolderDisplay('gf-${fIndex}')">
+                     <span><i class="ti ti-folder"></i> ${f} <span class="text-xs text-gray-500 font-normal">(${gFolders[f].length})</span></span>
+                     <i id="icon-gf-${fIndex}" class="ti ti-chevron-down"></i>
+                 </span>
+              </div>
+              <div class="hidden mt-1 ml-4 pl-2 border-l-2 border-pink-100" id="gf-${fIndex}">
+                  ${itemsHtml}
+              </div>
+          </div>`;
+      }
   }
 }
 
-function switchScreen(screenId) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(screenId).classList.add('active');
-}
+// Function mở đóng thư mục sinh đề
+window.toggleFolderCheck = function(checkbox, folderId) {
+    const itemsDiv = document.getElementById(folderId);
+    const itemChecks = itemsDiv.querySelectorAll('.gen-gram-item');
+    itemChecks.forEach(cb => cb.checked = checkbox.checked);
+};
+window.toggleFolderDisplay = function(folderId) {
+    const itemsDiv = document.getElementById(folderId);
+    const icon = document.getElementById('icon-' + folderId);
+    if (itemsDiv.classList.contains('hidden')) {
+        itemsDiv.classList.remove('hidden');
+        icon.classList.replace('ti-chevron-down', 'ti-chevron-up');
+    } else {
+        itemsDiv.classList.add('hidden');
+        icon.classList.replace('ti-chevron-up', 'ti-chevron-down');
+    }
+};
 
-function showToast(msg) {
-  const container = document.getElementById('toast-container');
-  const toast = document.createElement('div');
-  toast.className = 'toast';
-  toast.innerHTML = msg;
-  container.appendChild(toast);
-  setTimeout(() => { toast.remove(); }, 3000);
-}
+function switchScreen(screenId) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(screenId).classList.add('active'); }
+function showToast(msg) { const container = document.getElementById('toast-container'); const toast = document.createElement('div'); toast.className = 'toast'; toast.innerHTML = msg; container.appendChild(toast); setTimeout(() => { toast.remove(); }, 3000); }
 
-/* --- MODULE 1: GRAMMAR BANK (Manual & Excel) --- */
-function renderGrammar() {
-  const tbody = document.querySelector('#grammar-table tbody');
-  tbody.innerHTML = '';
-  grammarBank.forEach(g => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="font-bold text-pink-500">${g.level}</td>
-      <td class="font-jp text-lg text-gray-700 font-bold">${g.grammar}</td>
-      <td>${g.meaning}</td>
-      <td><button onclick="deleteGrammar(${g.id})" class="text-red-400 hover:text-red-600"><i class="ti ti-trash"></i></button></td>
-    `;
-    tbody.appendChild(tr);
+/* --- MODULE 1: GRAMMAR BANK (Thư mục) --- */
+function renderGrammarFolders() {
+  const list = document.getElementById('grammar-folder-list'); list.innerHTML = '';
+  const folders = {};
+  grammarBank.forEach(g => { const f = g.folder || "Mặc định"; folders[f] = (folders[f] || 0) + 1; });
+  
+  for (let f in folders) {
+      list.innerHTML += `<div class="bg-white p-4 rounded-xl border border-pink-200 cursor-pointer hover:border-pink-400 shadow-sm transition" onclick="openGrammarFolder('${f}')">
+          <div class="text-pink-600 font-bold mb-1 text-lg"><i class="ti ti-folder"></i> ${f}</div>
+          <div class="text-xs text-gray-500 font-bold">${folders[f]} cấu trúc</div>
+          <button class="text-red-400 mt-3 text-xs hover:text-red-600 font-bold bg-red-50 px-2 py-1 rounded" onclick="event.stopPropagation(); deleteGrammarFolder('${f}')"><i class="ti ti-trash"></i> Xóa thư mục</button>
+      </div>`;
+  }
+}
+function openGrammarFolder(folder) {
+  document.getElementById('grammar-folders-view').classList.add('hidden'); document.getElementById('grammar-table-view').classList.remove('hidden');
+  document.getElementById('grammar-current-folder').innerText = folder;
+  const tbody = document.querySelector('#grammar-table tbody'); tbody.innerHTML = '';
+  grammarBank.filter(g => (g.folder || "Mặc định") === folder).forEach(g => {
+    tbody.innerHTML += `<tr><td class="font-bold text-pink-500">${g.level}</td><td class="font-jp text-lg text-gray-700 font-bold">${g.grammar}</td><td>${g.meaning}</td><td><button onclick="deleteGrammar(${g.id}, '${folder}')" class="text-red-400 hover:text-red-600"><i class="ti ti-trash"></i></button></td></tr>`;
   });
 }
-
+function backToGrammarFolders() { document.getElementById('grammar-folders-view').classList.remove('hidden'); document.getElementById('grammar-table-view').classList.add('hidden'); }
+function deleteGrammarFolder(folder) {
+    if(confirm(`Xóa toàn bộ ngữ pháp trong thư mục "${folder}"?`)) {
+        grammarBank = grammarBank.filter(g => (g.folder || "Mặc định") !== folder);
+        saveData(); renderGrammarFolders(); showToast("🗑️ Đã xóa thư mục.");
+    }
+}
 function saveGrammar() {
-  const g = document.getElementById('gram-jp').value.trim();
-  const m = document.getElementById('gram-vi').value.trim();
-  const e = document.getElementById('gram-ex').value.trim();
-  const l = document.getElementById('gram-lvl').value;
+  const g = document.getElementById('gram-jp').value.trim(); const m = document.getElementById('gram-vi').value.trim(); const e = document.getElementById('gram-ex').value.trim(); const l = document.getElementById('gram-lvl').value;
   if(!g || !m) return showToast("⚠️ Vui lòng nhập đủ ngữ pháp và ý nghĩa!");
-  
-  grammarBank.push({ id: Date.now(), grammar: g, meaning: m, example: e, level: l });
-  saveData(); 
-  renderGrammar();
-  closePopup('modal-add-grammar');
-  showToast("🌸 Đã thêm ngữ pháp mới!");
+  grammarBank.push({ id: Date.now(), grammar: g, meaning: m, example: e, level: l, folder: "Tự nhập" });
+  saveData(); renderGrammarFolders(); closePopup('modal-add-grammar'); showToast("🌸 Đã thêm vào thư mục Tự nhập!");
   document.getElementById('gram-jp').value = ''; document.getElementById('gram-vi').value = ''; document.getElementById('gram-ex').value = '';
 }
-
-function deleteGrammar(id) {
-  grammarBank = grammarBank.filter(g => g.id !== id);
-  saveData(); renderGrammar(); showToast("🗑️ Đã xóa ngữ pháp.");
-}
+function deleteGrammar(id, folder) { grammarBank = grammarBank.filter(g => g.id !== id); saveData(); openGrammarFolder(folder); renderGrammarFolders(); showToast("🗑️ Đã xóa ngữ pháp."); }
 
 function handleGrammarExcelUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-
+  const file = event.target.files[0]; if (!file) return;
+  const folderName = file.name.replace(/\.[^/.]+$/, ""); // Lấy tên file làm tên thư mục
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, {type: 'array'});
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json(worksheet);
-      
-      if(json.length === 0) return showToast("⚠️ File Excel trống!");
-
+      const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'});
+      const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+      if(json.length === 0) return showToast("⚠️ File trống!");
       let count = 0;
       json.forEach(row => {
-          const normalizeKey = (keyStr) => {
-              const lower = keyStr.toLowerCase();
-              if(lower.includes('ngữ pháp') || lower.includes('grammar')) return 'grammar';
-              if(lower.includes('nghĩa') || lower.includes('meaning')) return 'meaning';
-              if(lower.includes('ví dụ') || lower.includes('example')) return 'example';
-              if(lower.includes('cấp độ') || lower.includes('level')) return 'level';
-              return keyStr;
-          };
-
-          let obj = { id: Date.now() + Math.random(), grammar: "", meaning: "", example: "", level: "N3" };
-          
-          for (let key in row) {
-              const normKey = normalizeKey(key);
-              if (obj[normKey] !== undefined) {
-                  obj[normKey] = row[key];
-              }
-          }
-
-          if(obj.grammar && obj.meaning) {
-              grammarBank.push(obj);
-              count++;
-          }
+          const normalizeKey = (k) => { const l = k.toLowerCase(); if(l.includes('ngữ pháp')||l.includes('grammar')) return 'grammar'; if(l.includes('nghĩa')||l.includes('meaning')) return 'meaning'; if(l.includes('ví dụ')||l.includes('example')) return 'example'; if(l.includes('cấp độ')||l.includes('level')) return 'level'; return k; };
+          let obj = { id: Date.now() + Math.random(), grammar: "", meaning: "", example: "", level: "N3", folder: folderName };
+          for (let key in row) { const nk = normalizeKey(key); if (obj[nk] !== undefined) obj[nk] = row[key]; }
+          if(obj.grammar && obj.meaning) { grammarBank.push(obj); count++; }
       });
-
-      saveData();
-      renderGrammar();
-      showToast(`🎉 Đã thêm thành công ${count} ngữ pháp từ Excel!`);
-
-    } catch (err) {
-      console.error(err);
-      showToast("❌ Lỗi đọc file Excel: " + err.message);
-    } finally {
-      event.target.value = '';
-    }
+      saveData(); renderGrammarFolders(); showToast(`🎉 Đã thêm ${count} ngữ pháp vào thư mục [${folderName}]!`);
+    } catch (err) { showToast("❌ Lỗi: " + err.message); } finally { event.target.value = ''; }
   };
   reader.readAsArrayBuffer(file);
 }
 
-/* --- MODULE 2: VOCAB BANK (PDF.js + Excel/SheetJS) --- */
-function renderVocab() {
-  const tbody = document.querySelector('#vocab-table tbody');
-  tbody.innerHTML = '';
-  vocabBank.forEach(v => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="font-jp text-lg font-bold">${v.word}</td>
-      <td class="text-gray-500">${v.reading || ''}</td>
-      <td>${v.meaning}</td>
-      <td><span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">${v.level}</span></td>
-      <td><button onclick="deleteVocab(${v.id})" class="text-red-400 hover:text-red-600"><i class="ti ti-trash"></i></button></td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-function deleteVocab(id) {
-  vocabBank = vocabBank.filter(v => v.id !== id);
-  saveData(); renderVocab(); showToast("🗑️ Đã xóa từ vựng.");
-}
-
-function clearVocabBank() {
-  if(confirm("Bạn có chắc chắn muốn xóa TOÀN BỘ danh sách từ vựng không?")) {
-    vocabBank = [];
-    saveData();
-    renderVocab();
-    showToast("🗑️ Đã xóa sạch kho từ vựng.");
+/* --- MODULE 2: VOCAB BANK (Thư mục) --- */
+function renderVocabFolders() {
+  const list = document.getElementById('vocab-folder-list'); list.innerHTML = '';
+  const folders = {};
+  vocabBank.forEach(v => { const f = v.folder || "Mặc định"; folders[f] = (folders[f] || 0) + 1; });
+  
+  for (let f in folders) {
+      list.innerHTML += `<div class="bg-white p-4 rounded-xl border border-blue-200 cursor-pointer hover:border-blue-400 shadow-sm transition" onclick="openVocabFolder('${f}')">
+          <div class="text-blue-600 font-bold mb-1 text-lg"><i class="ti ti-folder"></i> ${f}</div>
+          <div class="text-xs text-gray-500 font-bold">${folders[f]} từ vựng</div>
+          <button class="text-red-400 mt-3 text-xs hover:text-red-600 font-bold bg-red-50 px-2 py-1 rounded" onclick="event.stopPropagation(); deleteVocabFolder('${f}')"><i class="ti ti-trash"></i> Xóa thư mục</button>
+      </div>`;
   }
 }
+function openVocabFolder(folder) {
+  document.getElementById('vocab-folders-view').classList.add('hidden'); document.getElementById('vocab-table-view').classList.remove('hidden');
+  document.getElementById('vocab-current-folder').innerText = folder;
+  const tbody = document.querySelector('#vocab-table tbody'); tbody.innerHTML = '';
+  vocabBank.filter(v => (v.folder || "Mặc định") === folder).forEach(v => {
+    tbody.innerHTML += `<tr><td class="font-jp text-lg font-bold">${v.word}</td><td class="text-gray-500">${v.reading || ''}</td><td>${v.meaning}</td><td><span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">${v.level}</span></td><td><button onclick="deleteVocab(${v.id}, '${folder}')" class="text-red-400 hover:text-red-600"><i class="ti ti-trash"></i></button></td></tr>`;
+  });
+}
+function backToVocabFolders() { document.getElementById('vocab-folders-view').classList.remove('hidden'); document.getElementById('vocab-table-view').classList.add('hidden'); }
+function deleteVocabFolder(folder) {
+    if(confirm(`Xóa toàn bộ từ vựng trong thư mục "${folder}"?`)) {
+        vocabBank = vocabBank.filter(v => (v.folder || "Mặc định") !== folder);
+        saveData(); renderVocabFolders(); showToast("🗑️ Đã xóa thư mục.");
+    }
+}
+function saveVocab() {
+  const w = document.getElementById('voc-word').value.trim(); const r = document.getElementById('voc-read').value.trim(); const m = document.getElementById('voc-mean').value.trim(); const l = document.getElementById('voc-lvl').value;
+  if(!w || !m) return showToast("⚠️ Nhập đủ từ và nghĩa!");
+  vocabBank.push({ id: Date.now(), word: w, reading: r, meaning: m, level: l, folder: "Tự nhập" });
+  saveData(); renderVocabFolders(); closePopup('modal-add-vocab'); showToast("🌸 Đã thêm vào thư mục Tự nhập!");
+  document.getElementById('voc-word').value = ''; document.getElementById('voc-read').value = ''; document.getElementById('voc-mean').value = '';
+}
+function deleteVocab(id, folder) { vocabBank = vocabBank.filter(v => v.id !== id); saveData(); openVocabFolder(folder); renderVocabFolders(); showToast("🗑️ Đã xóa từ vựng."); }
+function clearVocabBank() { if(confirm("Xóa TOÀN BỘ danh sách từ vựng?")) { vocabBank = []; saveData(); renderVocabFolders(); showToast("🗑️ Đã xóa sạch."); } }
 
 function handleExcelUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-
+  const file = event.target.files[0]; if (!file) return;
+  const folderName = file.name.replace(/\.[^/.]+$/, "");
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, {type: 'array'});
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json(worksheet);
-      
-      if(json.length === 0) return showToast("⚠️ File Excel trống!");
-
+      const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'});
+      const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+      if(json.length === 0) return showToast("⚠️ File trống!");
       let count = 0;
       json.forEach(row => {
-          const normalizeKey = (keyStr) => {
-              const lower = keyStr.toLowerCase();
-              if(lower.includes('word') || lower.includes('từ vựng') || lower.includes('kanji')) return 'word';
-              if(lower.includes('reading') || lower.includes('cách đọc') || lower.includes('hiragana')) return 'reading';
-              if(lower.includes('meaning') || lower.includes('ý nghĩa') || lower.includes('nghĩa')) return 'meaning';
-              if(lower.includes('level') || lower.includes('cấp độ')) return 'level';
-              return keyStr;
-          };
-
-          let vocabObj = { id: Date.now() + Math.random(), word: "", reading: "", meaning: "", level: "N3" };
-          for (let key in row) {
-              const normKey = normalizeKey(key);
-              if (vocabObj[normKey] !== undefined) vocabObj[normKey] = row[key];
-          }
-
-          if(vocabObj.word && vocabObj.meaning) {
-              vocabBank.push(vocabObj);
-              count++;
-          }
+          const normalizeKey = (k) => { const l = k.toLowerCase(); if(l.includes('word')||l.includes('từ vựng')||l.includes('kanji')) return 'word'; if(l.includes('reading')||l.includes('cách đọc')||l.includes('hiragana')) return 'reading'; if(l.includes('meaning')||l.includes('ý nghĩa')||l.includes('nghĩa')) return 'meaning'; if(l.includes('level')||l.includes('cấp độ')) return 'level'; return k; };
+          let obj = { id: Date.now() + Math.random(), word: "", reading: "", meaning: "", level: "N3", folder: folderName };
+          for (let key in row) { const nk = normalizeKey(key); if (obj[nk] !== undefined) obj[nk] = row[key]; }
+          if(obj.word && obj.meaning) { vocabBank.push(obj); count++; }
       });
-      saveData();
-      renderVocab();
-      showToast(`🎉 Đã thêm thành công ${count} từ vựng từ Excel!`);
-    } catch (err) {
-      showToast("❌ Lỗi đọc Excel: " + err.message);
-    } finally { event.target.value = ''; }
+      saveData(); renderVocabFolders(); showToast(`🎉 Đã thêm ${count} từ vựng vào thư mục [${folderName}]!`);
+    } catch (err) { showToast("❌ Lỗi: " + err.message); } finally { event.target.value = ''; }
   };
   reader.readAsArrayBuffer(file);
 }
 
 async function handlePDFUpload(event) {
-  const file = event.target.files[0];
-  if (!file || file.type !== "application/pdf") return showToast("⚠️ Vui lòng chọn file PDF!");
-  
+  const file = event.target.files[0]; if (!file || file.type !== "application/pdf") return showToast("⚠️ Chọn file PDF!");
+  const folderName = file.name.replace(/\.[^/.]+$/, "");
   document.getElementById('pdf-status').classList.remove('hidden');
-  
   try {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-    let fullText = "";
-    const pages = Math.min(pdf.numPages, 3);
-    for (let i = 1; i <= pages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      fullText += textContent.items.map(s => s.str).join(" ") + "\n";
-    }
-
-    const prompt = `Trích xuất từ vựng tiếng Nhật từ đoạn text sau. YÊU CẦU BẮT BUỘC TRẢ VỀ ĐÚNG FORMAT JSON ARRAY NÀY, không bọc trong markdown, không giải thích gì thêm:
-[{"word":"漢字","reading":"かんじ","meaning":"Nghĩa tiếng Việt","level":"N3"}]
-Đoạn text: ${fullText.substring(0, 3000)}`;
-
+    const arrayBuffer = await file.arrayBuffer(); const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+    let fullText = ""; const pages = Math.min(pdf.numPages, 3);
+    for (let i = 1; i <= pages; i++) { const page = await pdf.getPage(i); const textContent = await page.getTextContent(); fullText += textContent.items.map(s => s.str).join(" ") + "\n"; }
+    const prompt = `Trích xuất từ vựng tiếng Nhật. BẮT BUỘC TRẢ VỀ ĐÚNG FORMAT JSON ARRAY, không giải thích: [{"word":"漢字","reading":"かんじ","meaning":"Nghĩa","level":"N3"}]\nText: ${fullText.substring(0, 3000)}`;
     const data = await callGeminiApiWithRetry(prompt);
-    let textRes = data.candidates[0].content.parts[0].text;
-    textRes = textRes.replace(/```json/g, '').replace(/```/g, '').trim();
+    let textRes = data.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
     const newVocabs = JSON.parse(textRes);
+    newVocabs.forEach(v => { v.id = Date.now() + Math.random(); v.folder = folderName; vocabBank.push(v); });
+    saveData(); renderVocabFolders(); showToast(`🎉 Trích xuất ${newVocabs.length} từ vựng vào [${folderName}]!`);
+  } catch (err) { showToast("❌ Lỗi: " + err.message); } finally { document.getElementById('pdf-status').classList.add('hidden'); event.target.value = ''; }
+}
+
+function getRandomSample(arr, n) { const shuffled = [...arr].sort(() => 0.5 - Math.random()); return shuffled.slice(0, n); }
+
+/* --- MODULE 3: AI GENERATOR NÂNG CẤP --- */
+async function generateMoreQuestions() {
+    if(!activeDeckId) return showToast("⚠️ Không tìm thấy bộ đề hiện tại!");
+    const deck = deckBank.find(d => String(d.id) === String(activeDeckId));
+    if(!deck || !deck.genParams) return showToast("⚠️ Bộ đề này được tạo thủ công hoặc thiếu thông số, không thể sinh thêm!");
     
-    newVocabs.forEach(v => {
-      v.id = Date.now() + Math.random();
-      vocabBank.push(v);
-    });
-    saveData(); renderVocab();
-    showToast(`🎉 Trích xuất thành công ${newVocabs.length} từ vựng từ PDF!`);
-
-  } catch (err) {
-    showToast("❌ Lỗi: " + err.message);
-  } finally {
-    document.getElementById('pdf-status').classList.add('hidden');
-    event.target.value = '';
-  }
+    // Gọi hàm sinh đề nhưng truyền ID vào để báo hiệu đây là lệnh "Sinh thêm"
+    generateQuiz(activeDeckId);
 }
 
-function getRandomSample(arr, n) {
-  const shuffled = [...arr].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, n);
-}
+async function generateQuiz(deckToAppendId = null) {
+  let isAppending = deckToAppendId !== null;
+  let level, count, difficulty, selectedGrammars = [], refVocabList = [];
+  let deck = null;
 
-/* --- MODULE 3: AI GENERATOR & MANUAL IMPORT --- */
-async function generateQuiz() {
-  const level = document.getElementById('gen-level').value;
-  const count = parseInt(document.getElementById('gen-count').value);
-  
-  const selectedCheckboxes = document.querySelectorAll('.gram-check:checked');
-  let selectedGrammars = Array.from(selectedCheckboxes).map(cb => cb.value);
-
-  const btn = document.getElementById('btn-generate');
+  const btn = isAppending ? null : document.getElementById('btn-generate');
   const status = document.getElementById('gen-status');
-  btn.disabled = true; btn.style.opacity = 0.5;
+  
+  if(btn) { btn.disabled = true; btn.style.opacity = 0.5; }
   status.classList.remove('hidden');
+  status.innerText = isAppending ? "Đang sinh thêm 5 câu hỏi mới... 🌸" : "Gemini đang suy nghĩ... 🌸";
+
+  // NẾU LÀ SINH THÊM CÂU HỎI
+  if (isAppending) {
+      deck = deckBank.find(d => String(d.id) === String(deckToAppendId));
+      count = 5; // Mặc định sinh thêm 5 câu mỗi lần bấm
+      level = deck.genParams.level;
+      difficulty = deck.genParams.difficulty || "Trung bình";
+      if (deck.type === 'grammar') selectedGrammars = deck.genParams.refItems;
+      else refVocabList = deck.genParams.refItems;
+  } 
+  // NẾU LÀ TẠO BỘ MỚI
+  else {
+      level = document.getElementById('gen-level').value;
+      count = parseInt(document.getElementById('gen-count').value);
+      difficulty = document.getElementById('gen-difficulty').value;
+      
+      const selGrammars = Array.from(document.querySelectorAll('.gen-gram-item:checked')).map(cb => cb.value);
+      const selVocabFolders = Array.from(document.querySelectorAll('.gen-vocab-folder:checked')).map(cb => cb.value);
+
+      if (selGrammars.length > 0) {
+          selectedGrammars = getRandomSample(selGrammars, 15); // Lấy tối đa 15 cấu trúc để tránh prompt quá dài
+      } else if (selVocabFolders.length > 0) {
+          let pool = vocabBank.filter(v => selVocabFolders.includes(v.folder || "Mặc định"));
+          refVocabList = getRandomSample(pool, 40).map(v => `${v.word}(${v.reading || ''}: ${v.meaning})`);
+      } else {
+          // Lấy ngẫu nhiên theo level nếu không chọn thư mục nào
+          let pool = vocabBank.filter(v => v.level === level);
+          refVocabList = getRandomSample(pool, 40).map(v => `${v.word}(${v.reading || ''}: ${v.meaning})`);
+      }
+  }
 
   const requestCount = Math.ceil(count * 1.3);
-  let prompt = "";
+  let diffText = difficulty === "Dễ" ? "Mức độ DỄ: Câu hỏi cơ bản, đáp án nhiễu dễ loại trừ." : (difficulty === "Trung bình" ? "Mức độ TRUNG BÌNH: Bám sát bài thi thực tế JLPT." : "Mức độ KHÓ: Sử dụng từ đồng nghĩa, cấu trúc dễ nhầm lẫn để đánh đố người học.");
+  
+  // Ràng buộc không được lặp lại câu hỏi cũ khi sinh thêm
+  let existingJp = isAppending ? `\nLƯU Ý QUAN TRỌNG: BẮT BUỘC TẠO CÂU MỚI HOÀN TOÀN. TUYỆT ĐỐI KHÔNG TẠO LẠI CÁC CÂU SAU (đã có trong bộ đề):\n` + deck.questions.map(q => "- " + q.jp).join('\n') : "";
 
+  let prompt = "";
   if (selectedGrammars.length > 0) {
-      prompt = `Bạn là chuyên gia ra đề thi JLPT. Hãy tạo ĐÚNG ${requestCount} câu trắc nghiệm trình độ ${level}, ĐỘ KHÓ TỪ TRUNG BÌNH ĐẾN KHÓ.
-Yêu cầu TẬP TRUNG vào các điểm ngữ pháp sau: ${selectedGrammars.join(', ')}. 
-QUY TẮC BẮT BUỘC: Trong câu hỏi "jp", PHẢI thay thế đúng cụm ngữ pháp cần kiểm tra bằng dấu ＿＿＿.
-YÊU CẦU BẮT BUỘC TRẢ VỀ ĐÚNG ĐỊNH DẠNG JSON ARRAY NÀY, KHÔNG DÙNG MARKDOWN:
+      prompt = `Bạn là chuyên gia ra đề thi JLPT. Tạo ĐÚNG ${requestCount} câu trắc nghiệm Ngữ pháp trình độ ${level}.
+Yêu cầu TẬP TRUNG vào: ${selectedGrammars.join(', ')}.
+${diffText}
+QUY TẮC BẮT BUỘC: Thay thế cụm ngữ pháp cần kiểm tra bằng dấu ＿＿＿. KHÔNG để lộ đáp án.${existingJp}
+TRẢ VỀ ĐÚNG FORMAT JSON ARRAY:
 [{"jp": "Câu hỏi (＿＿＿)", "options": ["A", "B", "C"], "ans": 0, "explain": "Giải thích chi tiết", "hint": "Gợi ý"}]`;
   } else {
-      const levelVocab = vocabBank.filter(v => v.level === level);
-      const sampleSize = Math.min(levelVocab.length, 30 + Math.floor(Math.random() * 11));
-      const refVocabList = getRandomSample(levelVocab, sampleSize).map(v => `${v.word}(${v.reading || ''}: ${v.meaning})`);
-      const refVocab = JSON.stringify(refVocabList);
-
       prompt = `Bạn là chuyên gia ra đề thi JLPT. Tạo ĐÚNG ${requestCount} câu trắc nghiệm TỪ VỰNG & HÁN TỰ trình độ ${level}.
-Dựa vào danh sách từ vựng: ${refVocab}.
-YÊU CẦU BẮT BUỘC TRẢ VỀ ĐÚNG ĐỊNH DẠNG JSON ARRAY NÀY, KHÔNG DÙNG MARKDOWN:
-[{"jp": "Câu hỏi từ vựng/Hán tự", "options": ["A", "B", "C", "D"], "ans": 0, "explain": "Giải thích nghĩa", "hint": "Gợi ý"}]`;
+${diffText}
+Dựa vào danh sách từ vựng sau (ưu tiên dùng): ${refVocabList.length > 0 ? JSON.stringify(refVocabList) : "Từ vựng chung cấp độ " + level}.
+Gồm 2 loại: Chọn cách đọc/ý nghĩa Hán tự VÀ Điền từ vào chỗ trống (＿＿＿).${existingJp}
+TRẢ VỀ ĐÚNG FORMAT JSON ARRAY:
+[{"jp": "Câu hỏi...", "options": ["A", "B", "C", "D"], "ans": 0, "explain": "Giải thích", "hint": "Gợi ý"}]`;
   }
 
   try {
     const data = await callGeminiApiWithRetry(prompt);
-    let textRes = data.candidates[0].content.parts[0].text;
-    textRes = textRes.replace(/```json/g, '').replace(/```/g, '').trim();
-    
+    let textRes = data.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
     let parsedQuestions = JSON.parse(textRes);
+    
     let validQuestions = parsedQuestions.filter(q => q.jp && q.options && q.options.length >= 2 && typeof q.ans === 'number');
-
-    if (selectedGrammars.length > 0) {
-      validQuestions = validQuestions.filter(q => q.jp.includes('＿') || q.jp.includes('_'));
-    }
-
+    if (selectedGrammars.length > 0) validQuestions = validQuestions.filter(q => q.jp.includes('＿') || q.jp.includes('_'));
     const finalQuestions = validQuestions.slice(0, count);
 
     if (finalQuestions.length === 0) return showToast("❌ AI sinh đề lỗi, vui lòng thử lại!");
 
-    const newDeck = {
-      id: Date.now(),
-      createdAt: new Date().toISOString(),
-      label: selectedGrammars.length > 0 ? `${level} Ngữ pháp AI` : `${level} Từ vựng AI`,
-      level: level,
-      type: selectedGrammars.length > 0 ? 'grammar' : 'vocab',
-      timesPlayed: 0,
-      sessionHistory: [],
-      questions: finalQuestions
-    };
-    deckBank.unshift(newDeck);
-    quizData = newDeck.questions;
-    activeDeckId = newDeck.id;
-    saveDeckBank();
-    saveData();
-    showToast(`🌸 Đã tạo xong ${quizData.length} câu hỏi!`);
-    setTimeout(() => { startQuiz(true); }, 1500);
-
-  } catch(e) {
-    showToast("❌ Lỗi: " + e.message);
-  } finally {
-    btn.disabled = false; btn.style.opacity = 1;
-    status.classList.add('hidden');
+    // XỬ LÝ LƯU KẾT QUẢ
+    if (isAppending) {
+        deck.questions = [...deck.questions, ...finalQuestions];
+        quizData = deck.questions;
+        saveDeckBank(); saveData();
+        showToast(`🌸 Đã đắp thêm ${finalQuestions.length} câu hỏi mới vào bộ đề!`);
+        startQuiz(true); 
+    } else {
+        const newDeck = {
+            id: Date.now(), createdAt: new Date().toISOString(),
+            label: selectedGrammars.length > 0 ? `${level} Ngữ pháp (Thư mục)` : `${level} Từ vựng (Thư mục)`,
+            level: level, type: selectedGrammars.length > 0 ? 'grammar' : 'vocab',
+            timesPlayed: 0, sessionHistory: [], questions: finalQuestions,
+            // Lưu lại các thông số để sau này có thể "Sinh thêm"
+            genParams: { level, difficulty, type: selectedGrammars.length > 0 ? 'grammar' : 'vocab', refItems: selectedGrammars.length > 0 ? selectedGrammars : refVocabList }
+        };
+        deckBank.unshift(newDeck); quizData = newDeck.questions; activeDeckId = newDeck.id;
+        saveDeckBank(); saveData();
+        showToast(`🌸 Đã tạo xong ${quizData.length} câu hỏi!`);
+        setTimeout(() => { startQuiz(true); }, 1500);
+    }
+  } catch(e) { showToast("❌ Lỗi: " + e.message); } 
+  finally { 
+      if(btn) { btn.disabled = false; btn.style.opacity = 1; }
+      status.classList.add('hidden'); 
   }
 }
-
-// Hàm nhập bộ đề thủ công bằng JSON
-function importManualQuiz() {
-    const raw = document.getElementById('manual-import-json').value.trim();
-    const name = document.getElementById('manual-deck-name').value.trim() || 'Bộ đề thủ công';
-    const level = document.getElementById('manual-deck-level').value;
-    
-    if (!raw) return showToast("⚠️ Vui lòng dán JSON vào ô trống!");
-    
-    let parsed;
-    try { parsed = JSON.parse(raw); }
-    catch(e) { return showToast("❌ JSON bị lỗi cú pháp!"); }
-
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-        return showToast("⚠️ Phải là một mảng JSON có ít nhất 1 câu hỏi!");
-    }
-    
-    for (let i=0; i<parsed.length; i++) {
-        let q = parsed[i];
-        if(!q.jp || !Array.isArray(q.options) || typeof q.ans !== 'number') {
-            return showToast(`❌ Lỗi format ở câu số ${i+1}! Vui lòng kiểm tra lại.`);
-        }
-    }
-
-    const newDeck = {
-        id: Date.now(),
-        createdAt: new Date().toISOString(),
-        label: name,
-        level: level,
-        type: 'manual', // Đánh dấu là đề do người dùng tự nhập
-        timesPlayed: 0,
-        sessionHistory: [],
-        questions: parsed
-    };
-
-    deckBank.unshift(newDeck);
-    quizData = newDeck.questions;
-    activeDeckId = newDeck.id;
-    
-    saveDeckBank();
-    saveData();
-    closePopup('modal-manual-quiz');
-    showToast(`🌸 Đã tạo xong bộ đề với ${parsed.length} câu! Chuyển sang làm bài...`);
-    
-    // Reset form
-    document.getElementById('manual-import-json').value = '';
-    document.getElementById('manual-deck-name').value = '';
-    
-    setTimeout(() => { startQuiz(true); }, 1000);
-}
-
 
 /* --- MODULE 4: CORE QUIZ ENGINE --- */
 function startQuiz(reset = true) {
-  if (quizData.length === 0) {
-    alert('Chưa có đề nào! Hãy tạo đề để bắt đầu nhé!');
-    return;
-  }
-  if (reset) {
-    currentQ = 0; score = 0; wrongList = []; userAnswers = []; geminiChats = {};
-  }
-  switchScreen('screen-play');
-  loadQuestion();
+  if (quizData.length === 0) { alert('Chưa có đề nào!'); return; }
+  if (reset) { currentQ = 0; score = 0; wrongList = []; userAnswers = []; geminiChats = {}; }
+  switchScreen('screen-play'); loadQuestion();
 }
-
 function loadQuestion() {
   hintShown = false; selectedOpt = null;
   const q = quizData[currentQ], total = quizData.length;
@@ -912,36 +943,22 @@ function loadQuestion() {
   document.getElementById('hint-box').style.display = 'none';
   document.getElementById('hint-btn').style.display = 'flex'; 
 
-  const wrap = document.getElementById('options-wrap');
-  wrap.innerHTML = '';
+  const wrap = document.getElementById('options-wrap'); wrap.innerHTML = '';
   q.options.forEach((opt, i) => {
-    const btn = document.createElement('button');
-    btn.className = 'opt-btn';
+    const btn = document.createElement('button'); btn.className = 'opt-btn';
     btn.innerHTML = `<span style="font-size:13px;color:#FF8FAB;min-width:22px;font-weight:700">${i+1}.</span><span>${opt}</span>`;
-    btn.onclick = () => handleAnswer(i);
-    wrap.appendChild(btn);
+    btn.onclick = () => handleAnswer(i); wrap.appendChild(btn);
   });
-  
-  if (userAnswers[currentQ] !== undefined) {
-      selectedOpt = userAnswers[currentQ];
-      lockOptions(selectedOpt);
-      showFeedback(selectedOpt === quizData[currentQ].ans);
-  }
+  if (userAnswers[currentQ] !== undefined) { selectedOpt = userAnswers[currentQ]; lockOptions(selectedOpt); showFeedback(selectedOpt === quizData[currentQ].ans); }
 }
-
 function handleAnswer(idx) {
   if (selectedOpt !== null) return;
-  selectedOpt = idx;
-  userAnswers[currentQ] = idx;
+  selectedOpt = idx; userAnswers[currentQ] = idx;
   const correct = idx === quizData[currentQ].ans;
-  if (correct) score++;
-  else wrongList.push({ q: quizData[currentQ], yourAns: idx });
-  
+  if (correct) score++; else wrongList.push({ q: quizData[currentQ], yourAns: idx });
   document.getElementById('live-score').textContent = score;
-  lockOptions(idx);
-  showFeedback(correct);
+  lockOptions(idx); showFeedback(correct);
 }
-
 function lockOptions(chosen) {
   const q = quizData[currentQ];
   document.querySelectorAll('.opt-btn').forEach((btn, i) => {
@@ -952,325 +969,152 @@ function lockOptions(chosen) {
   });
   document.getElementById('hint-btn').style.display = 'none';
 }
-
 function showFeedback(correct) {
   const fb = document.getElementById('feedback-area');
-  fb.className = 'feedback-box anim-in ' + (correct ? 'feedback-correct' : 'feedback-wrong');
-  fb.style.display = 'block';
-  document.getElementById('fb-head').innerHTML = correct
-    ? '<i class="ti ti-circle-check"></i> Chuẩn không cần chỉnh!'
-    : '<i class="ti ti-mood-sad"></i> Sai xíu xíu rồi!';
+  fb.className = 'feedback-box anim-in ' + (correct ? 'feedback-correct' : 'feedback-wrong'); fb.style.display = 'block';
+  document.getElementById('fb-head').innerHTML = correct ? '<i class="ti ti-circle-check"></i> Chuẩn không cần chỉnh!' : '<i class="ti ti-mood-sad"></i> Sai xíu xíu rồi!';
   document.getElementById('fb-body').textContent = quizData[currentQ].explain;
 }
-
-function nextQuestion() {
-  if (currentQ < quizData.length - 1) {
-      currentQ++; loadQuestion();
-  } else {
-      showResult();
-  }
-}
-function prevQuestion() {
-  if (currentQ > 0) { currentQ--; loadQuestion(); }
-}
-
+function nextQuestion() { if (currentQ < quizData.length - 1) { currentQ++; loadQuestion(); } else { showResult(); } }
+function prevQuestion() { if (currentQ > 0) { currentQ--; loadQuestion(); } }
 function toggleHint() {
   if (selectedOpt !== null) return;
   const box = document.getElementById('hint-box');
-  if (!hintShown) {
-    box.textContent = quizData[currentQ].hint;
-    box.style.display = 'block';
-    hintShown = true;
-    document.getElementById('hint-btn').style.display = 'none';
-  }
+  if (!hintShown) { box.textContent = quizData[currentQ].hint; box.style.display = 'block'; hintShown = true; document.getElementById('hint-btn').style.display = 'none'; }
 }
-
 function playDeck(deckId) {
-  const deck = deckBank.find(d => String(d.id) === String(deckId));
-  if (!deck) return;
-  activeDeckId = deckId;
-  quizData = deck.questions;
-  deck.timesPlayed++;
-  saveDeckBank();
-  saveData();
-  startQuiz(true);
+  const deck = deckBank.find(d => String(d.id) === String(deckId)); if (!deck) return;
+  activeDeckId = deckId; quizData = deck.questions; deck.timesPlayed++;
+  saveDeckBank(); saveData(); startQuiz(true);
 }
-
-function deleteDeck(id) {
-  if (confirm("Bạn có chắc chắn muốn xóa bộ đề này không?")) {
-    deckBank = deckBank.filter(d => String(d.id) !== String(id));
-    saveDeckBank();
-    renderStats();
-    showToast("🗑️ Đã xóa bộ đề.");
-  }
-}
-
 function showResult() {
   switchScreen('screen-result');
-  const total = quizData.length, wrong = wrongList.length, correct = total - wrong, pct = score / total;
+  const total = quizData.length, wrong = wrongList.length, correct = total - wrong;
   document.getElementById('result-score').textContent = score;
   document.getElementById('result-total').textContent = '/ ' + total + ' cau';
   document.getElementById('stat-correct').textContent = correct;
   document.getElementById('stat-wrong').textContent   = wrong;
 
   if(total > 0 && userAnswers.length > 0) {
-    const stat = {
-    date: new Date().toISOString().split('T')[0],
-    label: deckBank.find(d => String(d.id) === String(activeDeckId))?.label || 'Bài thi',
-    score, total
-    };
+    const stat = { date: new Date().toISOString().split('T')[0], label: deckBank.find(d => String(d.id) === String(activeDeckId))?.label || 'Bài thi', score, total };
     userStats.unshift(stat);
-    if (activeDeckId) {
-      const deck = deckBank.find(d => String(d.id) === String(activeDeckId));
-      if (deck) {
-        deck.sessionHistory.push({ date: stat.date, score, total });
-        saveDeckBank();
-      }
-    }
+    if (activeDeckId) { const deck = deckBank.find(d => String(d.id) === String(activeDeckId)); if (deck) { deck.sessionHistory.push({ date: stat.date, score, total }); saveDeckBank(); } }
     saveData();
   }
-
-  const revList = document.getElementById('review-list');
-  revList.innerHTML = '';
+  const revList = document.getElementById('review-list'); revList.innerHTML = '';
   if (wrongList.length > 0) {
     document.getElementById('review-section').style.display = 'block';
     wrongList.forEach(({ q, yourAns }) => {
-      const div = document.createElement('div');
-      div.className = 'review-item';
-      div.innerHTML = `<div class="review-q">${q.jp}</div>
-        <div class="review-your"><i class="ti ti-x"></i> Bạn chọn: ${q.options[yourAns]}</div>
-        <div class="review-correct"><i class="ti ti-check"></i> Đáp án đúng: ${q.options[q.ans]}</div>`;
+      const div = document.createElement('div'); div.className = 'review-item';
+      div.innerHTML = `<div class="review-q">${q.jp}</div><div class="review-your"><i class="ti ti-x"></i> Bạn chọn: ${q.options[yourAns]}</div><div class="review-correct"><i class="ti ti-check"></i> Đáp án đúng: ${q.options[q.ans]}</div>`;
       revList.appendChild(div);
     });
   } else { document.getElementById('review-section').style.display = 'none'; }
 }
-
-/* --- MODULE 5: THỐNG KÊ --- */
 function renderStats() {
   document.getElementById('stat-total-quizzes').innerText = userStats.length;
-  const totalCorrect = userStats.reduce((s,x) => s + x.score, 0);
-  const totalQs     = userStats.reduce((s,x) => s + x.total, 0);
+  const totalCorrect = userStats.reduce((s,x) => s + x.score, 0); const totalQs = userStats.reduce((s,x) => s + x.total, 0);
   document.getElementById('stat-avg-score').innerText = totalQs > 0 ? Math.round(totalCorrect/totalQs*100) + '%' : '0%';
 
-  const deckList = document.getElementById('deck-list');
-  deckList.innerHTML = '';
-  if (deckBank.length === 0) {
-    deckList.innerHTML = '<div class="text-sm text-gray-400 italic text-center py-4">Chưa có bộ đề nào. Hãy tạo bộ đầu tiên!</div>';
-  } else {
-    deckBank.forEach(deck => {
-      const dateStr = new Date(deck.createdAt).toLocaleDateString('vi-VN');
-      const avgPct  = deck.sessionHistory.length > 0
-        ? Math.round(deck.sessionHistory.reduce((s,x) => s + x.score/x.total, 0) / deck.sessionHistory.length * 100)
-        : null;
-      const pillClass = avgPct === null ? 'bg-gray-100 text-gray-500' : avgPct >= 80 ? 'bg-green-100 text-green-700' : avgPct >= 60 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-600';
-      
-      // Đổi icon dựa trên nguồn sinh đề
-      let icon = 'ti-books';
-      if(deck.type === 'vocab') icon = 'ti-vocabulary';
-      else if(deck.type === 'manual') icon = 'ti-file-import';
-
-      deckList.innerHTML += `
-        <div style="background:white;border:2px solid #FFE5EC;border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;">
-          <div style="width:40px;height:40px;background:#FFF0F5;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <i class="ti ${icon}" style="font-size:20px;color:#FF8FAB;"></i>
-          </div>
-          <div style="flex:1;min-width:0;">
-            <div style="font-weight:700;font-size:14px;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${deck.label}</div>
-            <div style="font-size:12px;color:#9CA3AF;margin-top:3px;display:flex;gap:10px;flex-wrap:wrap;">
-              <span><i class="ti ti-calendar" style="font-size:11px;"></i> ${dateStr}</span>
-              <span><i class="ti ti-checklist" style="font-size:11px;"></i> ${deck.questions.length} câu</span>
-            </div>
-          </div>
-          <span class="px-3 py-1 rounded-full text-xs font-bold ${pillClass}">
-            ${avgPct !== null ? avgPct + '%' : 'Chưa làm'}
-          </span>
-          <button onclick="playDeck('${deck.id}')" style="background:#FF8FAB;color:white;border:none;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;">
-            <i class="ti ti-player-play"></i>
-          </button>
-          <button onclick="deleteDeck('${deck.id}')" style="background:#FFF5F5;color:#ef4444;border:1px solid #fca5a5;border-radius:10px;padding:8px 12px;font-size:13px;cursor:pointer;">
-            <i class="ti ti-trash"></i>
-          </button>
-        </div>`;
-    });
-  }
-
-  const histContainer = document.getElementById('history-list');
-  histContainer.innerHTML = '';
-  userStats.slice(0, 10).forEach(s => {
-    const pct = Math.round(s.score/s.total*100);
-    const pillClass = pct >= 80 ? 'bg-green-100 text-green-700' : pct >= 60 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-600';
-    histContainer.innerHTML += `
-      <div style="background:white;border:2px solid #FFE5EC;border-radius:14px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
-        <div>
-          <div style="font-weight:700;font-size:13px;color:#374151;">${s.label || 'Bài thi'}</div>
-          <div style="font-size:11px;color:#9CA3AF;">${s.date}</div>
-        </div>
-        <span class="px-2 py-1 rounded-full text-xs font-bold ${pillClass}">${s.score}/${s.total}</span>
-      </div>`;
+  const deckList = document.getElementById('deck-list'); deckList.innerHTML = '';
+  deckBank.forEach(deck => {
+    const dateStr = new Date(deck.createdAt).toLocaleDateString('vi-VN');
+    const avgPct  = deck.sessionHistory.length > 0 ? Math.round(deck.sessionHistory.reduce((s,x) => s + x.score/x.total, 0) / deck.sessionHistory.length * 100) : null;
+    const pillClass = avgPct === null ? 'bg-gray-100 text-gray-500' : avgPct >= 80 ? 'bg-green-100 text-green-700' : avgPct >= 60 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-600';
+    let icon = deck.type === 'vocab' ? 'ti-vocabulary' : 'ti-books';
+    deckList.innerHTML += `<div style="background:white;border:2px solid #FFE5EC;border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;"><div style="width:40px;height:40px;background:#FFF0F5;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ${icon}" style="font-size:20px;color:#FF8FAB;"></i></div><div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:14px;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${deck.label}</div><div style="font-size:12px;color:#9CA3AF;margin-top:3px;display:flex;gap:10px;flex-wrap:wrap;"><span><i class="ti ti-calendar" style="font-size:11px;"></i> ${dateStr}</span><span><i class="ti ti-checklist" style="font-size:11px;"></i> ${deck.questions.length} câu</span></div></div><span class="px-3 py-1 rounded-full text-xs font-bold ${pillClass}">${avgPct !== null ? avgPct + '%' : 'Chưa làm'}</span><button onclick="playDeck('${deck.id}')" style="background:#FF8FAB;color:white;border:none;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;"><i class="ti ti-player-play"></i></button></div>`;
   });
 }
 
-/* --- MODULE 6: AI GIA SƯ --- */
+/* AI TUTOR */
 function openGeminiChat() {
-  const q = quizData[currentQ];
-  const chatHistory = document.getElementById('gemini-chat-history');
-  
+  const q = quizData[currentQ]; const chatHistory = document.getElementById('gemini-chat-history');
   if (!geminiChats[currentQ]) {
-    const isAnswered = selectedOpt !== null;
-    let greeting = `Xin chào! Mình thấy bạn đang làm câu:<br><b>${q.jp}</b><br>`;
-    greeting += isAnswered ? `Bạn đã trả lời xong. Bạn cần giải thích thêm không?` : `Bạn chưa chọn đáp án. Cần mình gợi ý chút không?`;
-    geminiChats[currentQ] = [{ role: 'bot', text: greeting }];
+    geminiChats[currentQ] = [{ role: 'bot', text: `Xin chào! Mình thấy bạn đang làm câu:<br><b>${q.jp}</b><br>Bạn cần mình giải thích hay hỗ trợ gì không?` }];
   }
-
   chatHistory.innerHTML = '';
   geminiChats[currentQ].forEach(msg => {
     const isUser = msg.role === 'user';
-    chatHistory.innerHTML += `
-      <div style="background:${isUser ? '#FF8FAB' : '#E5F3FF'}; color:${isUser ? 'white' : '#1d4ed8'}; padding:10px 14px; border-radius:12px; align-self:${isUser ? 'flex-end' : 'flex-start'}; max-width:85%; line-height:1.6;">
-        ${msg.text}
-      </div>`;
+    chatHistory.innerHTML += `<div style="background:${isUser ? '#FF8FAB' : '#E5F3FF'}; color:${isUser ? 'white' : '#1d4ed8'}; padding:10px 14px; border-radius:12px; align-self:${isUser ? 'flex-end' : 'flex-start'}; max-width:85%; line-height:1.6;">${msg.text}</div>`;
   });
-  
-  document.getElementById('gemini-input').value = '';
-  document.getElementById('popup-gemini').classList.add('open');
-  chatHistory.scrollTop = chatHistory.scrollHeight;
+  document.getElementById('gemini-input').value = ''; document.getElementById('popup-gemini').classList.add('open'); chatHistory.scrollTop = chatHistory.scrollHeight;
 }
 
-document.getElementById('gemini-input').addEventListener('keypress', e => { if (e.key === 'Enter') sendToGemini(); });
-
 async function sendToGemini() {
-  const inputEl = document.getElementById('gemini-input');
-  const text = inputEl.value.trim();
-  if(!text) return;
-
+  const inputEl = document.getElementById('gemini-input'); const text = inputEl.value.trim(); if(!text) return;
   geminiChats[currentQ].push({ role: 'user', text: text });
-  
   const chatHistory = document.getElementById('gemini-chat-history');
   chatHistory.innerHTML += `<div style="background:#FF8FAB; color:white; padding:10px 14px; border-radius:12px; font-size:14px; align-self:flex-end; max-width:85%; line-height:1.6;">${text}</div>`;
   inputEl.value = '';
-  
   const loadId = 'loading-' + Date.now();
   chatHistory.innerHTML += `<div id="${loadId}" style="background:#F3F4F6; padding:10px 14px; border-radius:12px; font-size:14px; align-self:flex-start; color:#6B7280;">Trợ lý đang gõ... 🐰</div>`;
   chatHistory.scrollTop = chatHistory.scrollHeight;
 
   const q = quizData[currentQ];
-  
-  // 🌟 NÂNG CẤP PROMPT: CHIA TRƯỜNG HỢP XỬ LÝ THÔNG MINH
   let prompt = `LỆNH CỦA NGƯỜI DÙNG: "${text}"
-  
   [Ngữ cảnh câu trắc nghiệm hiện tại]:
   - Câu hỏi: "${q.jp}"
   - Lựa chọn: ${q.options.map((opt, i) => `${i + 1}. ${opt}`).join(' | ')}
   - Đáp án đúng: Lựa chọn số ${q.ans + 1} (${q.options[q.ans]})
   - Giải thích gốc: "${q.explain}"
-  
   CHỈ THỊ TỐI CAO: Hãy đọc "LỆNH CỦA NGƯỜI DÙNG" và xử lý theo ĐÚNG 1 TRONG 2 TRƯỜNG HỢP SAU:
-  
-  Trường hợp 1: Người dùng hỏi về MỘT TỪ VỰNG / NGỮ PHÁP CỤ THỂ (VD: "dịch chữ X", "phân tích ngữ pháp Y").
+  Trường hợp 1: Người dùng hỏi về MỘT TỪ VỰNG / NGỮ PHÁP CỤ THỂ.
   - BẮT BUỘC chỉ tập trung vào đúng đối tượng đó.
   - Phân tích từ vựng: Ý nghĩa -> Cách đọc -> Phân tích Kanji.
   - Phân tích ngữ pháp: Ý nghĩa -> Cấu trúc -> Sắc thái sử dụng.
-  
-  Trường hợp 2: Người dùng yêu cầu GIẢI THÍCH ĐÁP ÁN (VD: "tại sao chọn 1", "tại sao không chọn mấy cái kia", "giải thích các đáp án").
-  - BẮT BUỘC phân tích rõ ràng:
-    + Tại sao đáp án số ${q.ans + 1} lại đúng (dựa vào ngữ cảnh câu).
-    + Tại sao CÁC ĐÁP ÁN CÒN LẠI lại sai (vì sai cấu trúc, sai ý nghĩa, hay không phù hợp hoàn cảnh).
-  
+  Trường hợp 2: Người dùng yêu cầu GIẢI THÍCH ĐÁP ÁN (VD: "tại sao chọn...", "giải thích các đáp án").
+  - BẮT BUỘC phân tích rõ ràng: Tại sao đáp án số ${q.ans + 1} lại đúng và Tại sao CÁC ĐÁP ÁN CÒN LẠI lại sai.
   YÊU CẦU TRÌNH BÀY: Dùng giọng điệu thân thiện, trình bày gọn gàng bằng markdown. TUYỆT ĐỐI KHÔNG dùng ký hiệu ### hay ---.`;
 
   try {
     const data = await callGeminiApiWithRetry(prompt);
     let reply = data.candidates[0].content.parts[0].text;
-    
-    // Xử lý lỗi giao diện Markdown
-    reply = reply
-      .replace(/\n/g, '<br>')
-      .replace(/### (.*?)(<br>|$)/g, '<div style="font-weight:bold; color:#FF8FAB; margin-top:8px; font-size:15px;">$1</div>')
-      .replace(/## (.*?)(<br>|$)/g, '<div style="font-weight:bold; color:#FF8FAB; margin-top:8px; font-size:15px;">$1</div>')
-      .replace(/---/g, '<hr style="border-top: 2px dashed #FFE5EC; margin: 10px 0;">')
-      .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-      .replace(/\*(.*?)\*/g, '<i>$1</i>');
-    
+    reply = reply.replace(/\n/g, '<br>').replace(/### (.*?)(<br>|$)/g, '<div style="font-weight:bold; color:#FF8FAB; margin-top:8px; font-size:15px;">$1</div>').replace(/## (.*?)(<br>|$)/g, '<div style="font-weight:bold; color:#FF8FAB; margin-top:8px; font-size:15px;">$1</div>').replace(/---/g, '<hr style="border-top: 2px dashed #FFE5EC; margin: 10px 0;">').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>');
     geminiChats[currentQ].push({ role:'bot', text: reply });
     document.getElementById(loadId).remove();
     chatHistory.innerHTML += `<div style="background:#E5F3FF; padding:10px 14px; border-radius:12px; font-size:14px; align-self:flex-start; color:#1d4ed8; max-width:90%; line-height:1.6;">${reply}</div>`;
     chatHistory.scrollTop = chatHistory.scrollHeight;
-  } catch(e) {
-    document.getElementById(loadId).innerHTML = '<span style="color:#ef4444">Chi tiết lỗi từ Google: <br>' + e.message + '</span>';
-    console.error("Lỗi Gemini:", e);
-  }
+  } catch(e) { document.getElementById(loadId).innerHTML = `<span style="color:#ef4444">Lỗi: ${e.message}</span>`; }
 }
 
-
-/* --- MODULE 7: BACKUP --- */
+async function callGeminiApiWithRetry(prompt, retries = 0) {
+    const apiKey = getApiKey(); 
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
+    try {
+        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+        if (!res.ok) { const errData = await res.json(); throw new Error(errData.error?.message || "API lỗi"); }
+        return await res.json();
+    } catch (e) {
+        if (retries < 3) { switchToNextApiKey(); return callGeminiApiWithRetry(prompt, retries + 1); } 
+        else { throw new Error("API bận hoặc lỗi kết nối sau nhiều lần thử."); }
+    }
+}
 function exportData() {
-  const db = { grammarBank, vocabBank, userStats, quizData, deckBank };
-  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `JLPT_Backup_${new Date().toISOString().split('T')[0]}.json`;
-  a.click();
+  const dbLocal = { grammarBank, vocabBank, userStats, quizData, deckBank };
+  const blob = new Blob([JSON.stringify(dbLocal, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `JLPT_Backup_${new Date().toISOString().split('T')[0]}.json`; a.click();
 }
-
 function importData(e) {
-  const file = e.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
+  const file = e.target.files[0]; if(!file) return; const reader = new FileReader();
   reader.onload = function(evt) {
     try {
       const data = JSON.parse(evt.target.result);
-      if(data.grammarBank) grammarBank = data.grammarBank;
-      if(data.vocabBank) vocabBank = data.vocabBank;
-      if(data.userStats) userStats = data.userStats;
-      if(data.quizData) quizData = data.quizData;
-      if(data.deckBank) deckBank = data.deckBank;
-      
-      saveDeckBank();
-      saveData(); renderGrammar(); renderVocab(); updateDashCounters();
-      showToast("🌸 Khôi phục dữ liệu thành công!");
+      if(data.grammarBank) grammarBank = data.grammarBank; if(data.vocabBank) vocabBank = data.vocabBank;
+      if(data.userStats) userStats = data.userStats; if(data.quizData) quizData = data.quizData; if(data.deckBank) deckBank = data.deckBank;
+      checkAndAssignFolders();
+      saveDeckBank(); saveData(); renderGrammarFolders(); renderVocabFolders(); updateDashCounters(); showToast("🌸 Khôi phục dữ liệu thành công!");
     } catch(err) { showToast("❌ File không hợp lệ!"); }
   };
   reader.readAsText(file);
 }
-
 function clearAllData() {
-  if(confirm("Xóa toàn bộ dữ liệu?")) {
+  if(confirm("Xóa toàn bộ dữ liệu ở máy tính này?")) {
     grammarBank = []; vocabBank = []; userStats = []; quizData = []; deckBank = [];
-    saveDeckBank();
-    saveData(); renderGrammar(); renderVocab(); updateDashCounters();
-    showToast("🗑️ Đã xóa sạch dữ liệu.");
+    saveDeckBank(); saveData(); renderGrammarFolders(); renderVocabFolders(); updateDashCounters(); showToast("🗑️ Đã xóa sạch dữ liệu máy.");
   }
 }
-
 function closePopup(id) { document.getElementById(id).classList.remove('open'); }
 function handleOverlay(e, id) { if (e.target === document.getElementById(id)) closePopup(id); }
-async function callGeminiApiWithRetry(prompt, retries = 0) {
-    const maxRetries = 3; // Chỉ thử lại tối đa 3 lần
-    const apiKey = getApiKey(); 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
-
-    try {
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-
-        if (!res.ok) {
-            const errData = await res.json();
-            throw new Error(errData.error?.message || "API lỗi");
-        }
-        return await res.json();
-    } catch (e) {
-        if (retries < maxRetries) {
-            console.warn(`Key bị lỗi, đang thử key tiếp theo (lần ${retries + 1})...`);
-            switchToNextApiKey(); 
-            return callGeminiApiWithRetry(prompt, retries + 1); 
-        } else {
-            throw new Error("API bận hoặc lỗi kết nối sau nhiều lần thử.");
-        }
-    }
-}
 </script>
 </body>
-</html> 
+</html>
