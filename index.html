@@ -558,10 +558,15 @@ async function syncToCloud(silent = false) {
     if(!silent) showToast("☁️ Đã ĐỒNG BỘ thành công lên mây!");
   } catch(e) { if(!silent) showToast("❌ Lỗi lưu dữ liệu: " + e.message); }
 }
-
+function mergeById(cloudArr, localArr) {
+  const map = new Map();
+  cloudArr.forEach(item => map.set(String(item.id), item));
+  localArr.forEach(item => map.set(String(item.id), item)); // dữ liệu local mới hơn sẽ đè lên
+  return Array.from(map.values());
+}
 async function syncFromCloud() {
   if(!currentUser) return;
-  showToast("⏳ Đang tải dữ liệu từ mây về...");
+  showToast("⏳ Đang đồng bộ dữ liệu với đám mây...");
   try {
     const doc = await db.collection('users').doc(currentUser.uid).get();
     if(!doc.exists) {
@@ -569,15 +574,18 @@ async function syncFromCloud() {
       return showToast("☁️ Đã tạo kho dữ liệu mới cho tài khoản của bạn!");
     }
     const data = doc.data();
-    if(data.grammarBank) grammarBank = JSON.parse(data.grammarBank);
-    if(data.vocabBank) vocabBank = JSON.parse(data.vocabBank);
-    if(data.userStats) userStats = JSON.parse(data.userStats);
-    if(data.quizData) quizData = JSON.parse(data.quizData);
-    if(data.deckBank) deckBank = JSON.parse(data.deckBank);
-    
+    const cloudGrammar = data.grammarBank ? JSON.parse(data.grammarBank) : [];
+    const cloudVocab   = data.vocabBank   ? JSON.parse(data.vocabBank)   : [];
+    const cloudStats   = data.userStats   ? JSON.parse(data.userStats)   : [];
+    const cloudDecks   = data.deckBank    ? JSON.parse(data.deckBank)    : [];
+
+    grammarBank = mergeById(cloudGrammar, grammarBank);
+    vocabBank   = mergeById(cloudVocab, vocabBank);
+    userStats   = mergeById(cloudStats, userStats);
+    deckBank    = mergeById(cloudDecks, deckBank);
+    if (quizData.length === 0 && data.quizData) quizData = JSON.parse(data.quizData);
+
     checkAndAssignFolders();
-    
-    // Lưu cục bộ mà không gọi syncToCloud để tránh lặp
     localStorage.setItem('jlpt_grammarBank', JSON.stringify(grammarBank));
     localStorage.setItem('jlpt_vocabBank', JSON.stringify(vocabBank));
     localStorage.setItem('jlpt_userStats', JSON.stringify(userStats));
@@ -585,7 +593,8 @@ async function syncFromCloud() {
     localStorage.setItem(LS_KEY, JSON.stringify(quizData));
 
     renderGrammarFolders(); renderVocabFolders(); updateDashCounters();
-    showToast("☁️ Đã TẢI VỀ MÁY thành công!");
+    await syncToCloud(true); // đẩy luôn bản đã gộp lên mây để 2 chiều khớp nhau
+    showToast("☁️ Đã đồng bộ xong dữ liệu!");
   } catch(e) { showToast("❌ Lỗi tải dữ liệu: " + e.message); }
 }
 
@@ -860,7 +869,6 @@ BẮT BUỘC CHỈ TRẢ VỀ ĐÚNG FORMAT JSON ARRAY SAU ĐÂY. TUYỆT ĐỐI
         showToast(`🌸 Đã đắp thêm ${finalQuestions.length} câu hỏi mới!`);
         
         // Mở màn hình chơi, bắt đầu từ câu hỏi mới nhất (điểm số cũ tự động giữ nguyên vì không reset)
-        switchScreen('screen-play');
         currentQ = oldLength; 
         loadQuestion(); 
     } else {
