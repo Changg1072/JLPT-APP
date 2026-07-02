@@ -565,8 +565,8 @@ function mergeById(cloudArr, localArr) {
   return Array.from(map.values());
 }
 async function syncFromCloud() {
-  if(!currentUser) return;
-  showToast("⏳ Đang đồng bộ dữ liệu với đám mây...");
+  if(!currentUser) return showToast("⚠️ Bạn cần đăng nhập Gmail trước!");
+  showToast("⏳ Đang tải dữ liệu từ mây về...");
   try {
     const doc = await db.collection('users').doc(currentUser.uid).get();
     if(!doc.exists) {
@@ -574,18 +574,23 @@ async function syncFromCloud() {
       return showToast("☁️ Đã tạo kho dữ liệu mới cho tài khoản của bạn!");
     }
     const data = doc.data();
-    const cloudGrammar = data.grammarBank ? JSON.parse(data.grammarBank) : [];
-    const cloudVocab   = data.vocabBank   ? JSON.parse(data.vocabBank)   : [];
-    const cloudStats   = data.userStats   ? JSON.parse(data.userStats)   : [];
-    const cloudDecks   = data.deckBank    ? JSON.parse(data.deckBank)    : [];
+    
+    // XÓA SẠCH TRƯỚC KHI ĐỔ VÀO ĐỂ TRÁNH NHÂN ĐÔI
+    grammarBank = []; 
+    vocabBank = []; 
+    userStats = []; 
+    quizData = []; 
+    deckBank = [];
 
-    grammarBank = mergeById(cloudGrammar, grammarBank);
-    vocabBank   = mergeById(cloudVocab, vocabBank);
-    userStats   = mergeById(cloudStats, userStats);
-    deckBank    = mergeById(cloudDecks, deckBank);
-    if (quizData.length === 0 && data.quizData) quizData = JSON.parse(data.quizData);
-
+    if(data.grammarBank) grammarBank = JSON.parse(data.grammarBank);
+    if(data.vocabBank) vocabBank = JSON.parse(data.vocabBank);
+    if(data.userStats) userStats = JSON.parse(data.userStats);
+    if(data.quizData) quizData = JSON.parse(data.quizData);
+    if(data.deckBank) deckBank = JSON.parse(data.deckBank);
+    
     checkAndAssignFolders();
+    
+    // Lưu cục bộ mà không gọi syncToCloud để tránh lặp
     localStorage.setItem('jlpt_grammarBank', JSON.stringify(grammarBank));
     localStorage.setItem('jlpt_vocabBank', JSON.stringify(vocabBank));
     localStorage.setItem('jlpt_userStats', JSON.stringify(userStats));
@@ -593,8 +598,7 @@ async function syncFromCloud() {
     localStorage.setItem(LS_KEY, JSON.stringify(quizData));
 
     renderGrammarFolders(); renderVocabFolders(); updateDashCounters();
-    await syncToCloud(true); // đẩy luôn bản đã gộp lên mây để 2 chiều khớp nhau
-    showToast("☁️ Đã đồng bộ xong dữ liệu!");
+    showToast("☁️ Đã TẢI VỀ MÁY thành công!");
   } catch(e) { showToast("❌ Lỗi tải dữ liệu: " + e.message); }
 }
 
@@ -994,6 +998,12 @@ function renderStats() {
   document.getElementById('stat-avg-score').innerText = totalQs > 0 ? Math.round(totalCorrect/totalQs*100) + '%' : '0%';
 
   const deckList = document.getElementById('deck-list'); deckList.innerHTML = '';
+  
+  if (deckBank.length === 0) {
+      deckList.innerHTML = '<p class="text-center text-sm text-gray-400 py-4">Chưa có bộ đề nào!</p>';
+      return;
+  }
+
   deckBank.forEach(deck => {
     const dateStr = new Date(deck.createdAt).toLocaleDateString('vi-VN');
     const avgPct  = deck.sessionHistory.length > 0 ? Math.round(deck.sessionHistory.reduce((s,x) => s + x.score/x.total, 0) / deck.sessionHistory.length * 100) : null;
@@ -1013,10 +1023,15 @@ function renderStats() {
             </div>
           </div>
         </div>
+        
         <div style="display:flex; gap: 8px; margin-top: 12px;">
           <button onclick="playDeck('${deck.id}')" class="btn-pink py-2 px-3 text-xs flex-1 rounded-xl"><i class="ti ti-player-play"></i> Làm bài</button>
           <button onclick="showDeckHistory('${deck.id}')" class="btn-outline py-2 px-3 text-xs flex-1 text-blue-500 border-blue-200 rounded-xl hover:bg-blue-50"><i class="ti ti-history"></i> Lịch sử</button>
-          <button onclick="deleteDeck('${deck.id}')" class="btn-outline py-2 px-3 text-xs text-red-500 border-red-200 rounded-xl hover:bg-red-50"><i class="ti ti-trash"></i> Xóa</button>
+        </div>
+        
+        <!-- NÚT XÓA TÁCH RIÊNG XUỐNG DƯỚI -->
+        <div style="margin-top: 8px;">
+          <button onclick="deleteDeck('${deck.id}')" class="btn-outline py-2 px-3 text-xs w-full text-red-500 border-red-200 rounded-xl hover:bg-red-50"><i class="ti ti-trash"></i> Xóa bộ đề này</button>
         </div>
       </div>`;
   });
